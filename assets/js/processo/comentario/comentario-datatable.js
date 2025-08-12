@@ -1,0 +1,61 @@
+"use strict";
+var t;
+var cod_processo = $('#cod_processo').val();
+
+var DatatableRemoteAjaxDemo = function () {
+
+
+    var lsitDataInTable = function () {
+
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        t = $('#tb_comentarios').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "stateSave": true,
+            "lengthMenu": [10, 25, 50],
+            "responsive": true,
+            "oLanguage": {sProcessing: "<div class='loader-container'><div id='loader'></div></div>"},
+            "width":200,
+            // "iDisplayLength": 2,
+            "ajax": {
+                "url": $('#tb_comentarios').attr('data-url'),
+                "dataType": "json",
+                "type": "POST",
+                "data": {
+                    cod_processo: cod_processo
+                }
+            },
+            "order": [
+                [0, "desc"]
+            ],
+            "columns": [
+                { "data": "id" },
+                { "data": "descricao" },
+                { "data": "data_criacao"},
+                { "data": "autor"},
+                { "data": "action" }
+            ]
+        });
+
+    }
+
+    //== Public Functions
+    return {
+        // public functions
+        init: function () {
+            lsitDataInTable();
+
+
+        }
+    };
+}();
+jQuery(document).ready(function () {
+    DatatableRemoteAjaxDemo.init()
+});
+
+

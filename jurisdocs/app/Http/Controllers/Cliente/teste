@@ -1,0 +1,367 @@
+<?php
+
+namespace App\Http\Controllers\Cliente;
+
+use App\AgendamentoConsulta;
+use App\AgendamentoReuniao;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\{
+    Cliente,
+    Agenda
+};
+use App\Helpers\LogActivity;
+use App\Notifications\ActivityNotification;
+use Illuminate\Support\Facades\Notification;
+use App\Traits\DatatablTrait;
+use Gate;
+use DB;
+
+class AppointmentController extends Controller
+{
+
+    use DatatablTrait;
+
+    private $cliente;
+
+    public function __construct(Cliente $cliente)
+    {
+        $this->cliente = $cliente;
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        return view('cliente.appointment.appointment');
+    }
+    public function consulta()
+    {
+        return view('cliente.appointment.consulta.appointment');
+    }
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        $cliente = auth()->user()->cliente;
+
+        if ($cliente->activo == 'S')
+            return view('cliente.appointment.appointment_create');
+        else
+            return back();
+    }
+    public function create_consulta()
+    {
+        $cliente = auth()->user()->cliente;
+
+        if ($cliente->activo == 'S')
+            return view('cliente.appointment.consulta.appointment_create');
+        else
+            return back();
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        try {
+            $cliente = auth()->user()->cliente;
+
+            $agenda = new Agenda();
+
+
+            $agenda->cliente_id = $cliente->id;
+            $agenda->assunto = addslashes($request->assunto);
+            $agenda->telefone = $cliente->telefone;
+            $agenda->data = date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->date)));
+
+            $agenda->hora = date('H:i:s', strtotime($request->time));
+            $agenda->observacao = addslashes($request->note);
+            $agenda->type = 'exists';
+            $agenda->save();
+
+
+            if ($request->type_agenda == "reuniao") {
+                $this->storeReuniao($agenda, $request);
+            } else {
+                $this->storeConsulta($agenda, $request);
+            }
+
+            return redirect()->route('cliente.agenda.index')->with('success', "Agenda criada.");
+        } catch (\Exception $e) {
+            // Em produção, use log ao invés de dd()
+            dd(['message' => $e->getMessage(), 'trace' => $e->getTrace()]);
+            return back()->with('error', 'Erro ao criar agenda.');
+        }
+    }
+    public function storeReuniao(Agenda $a, Request $request)
+    {
+
+        $agendaReuniao = new AgendamentoReuniao();
+        $agendaReuniao->vc_entidade = $request->vc_entidade;
+
+        $agendaReuniao->vc_motivo = addslashes($request->vc_motivo);
+        $agendaReuniao->vc_pataforma = $request->vc_plataforma;
+        $agendaReuniao->link_reuniao = $request->vc_link_acesso;
+
+        $agendaReuniao->vc_nota = addslashes($request->vc_nota);
+        $agendaReuniao->agenda_id = $a->id;
+        $agendaReuniao->it_termo = $request->it_termo;
+        $agendaReuniao->save();
+    }
+    public function storeConsulta(Agenda $a, Request $request)
+    {
+
+        $agendaReuniao = new AgendamentoConsulta();
+        $agendaReuniao->vc_tipo = $request->vc_tipo;
+        $agendaReuniao->vc_area = $request->vc_area;
+        $agendaReuniao->vc_pataforma = $request->vc_plataforma;
+        $agendaReuniao->link_reuniao = $request->vc_link_acesso;
+        $agendaReuniao->vc_nota = addslashes($request->vc_nota);
+
+        $agendaReuniao->agenda_id = $a->id;
+        $agendaReuniao->it_termo = $request->it_termo;
+        $agendaReuniao->it_envDocs = $request->it_envDocs;
+        $agendaReuniao->save();
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        //
+    }
+
+    public function appointmentList(Request $request)
+    {
+
+        $user = auth()->user();
+        $isEdit = $user->can('appointment_edit');
+
+        $cliente = $user->cliente;
+
+        /*
+          |----------------
+          | Listing colomns
+          |----------------
+         */
+        $columns = array(
+            0 => 'id',
+            1 => 'data',
+            2 => 'hora',
+            3 => 'vc_tipo',
+            4 => 'pataforma',
+            5 => 'link_reuniao',
+            6 => 'activo'
+        );
+
+        $totalData = DB::table('agenda AS a')
+            ->leftJoin('agendamento_consultas AS ac', 'a.agenda_id', '=', 'ac.id')
+
+            ->select('a.id', 'a.activo AS status', 'a.data AS date')
+            ->where('a.cliente_id', $cliente->id)
+            ->count();
+        $totalRec = $totalData;
+
+        $limit = $request->input('length');
+        $start = $request->input('start');
+        $order = $columns[$request->input('order.0.column')];
+        $dir = $request->input('order.0.dir');
+
+        $search = $request->input('search.value');
+
+        $terms = DB::table('agenda AS a')
+            ->leftJoin('agendamento_consultas AS ac', 'a.agenda_id', '=', 'ac.id') // faz o join
+            ->select(
+                'a.id',
+                'a.activo AS status',
+                'a.data AS date',
+                'a.hora AS time',
+                'ac.vc_tipo',
+                'ac.vc_pataforma',
+                'ac.link_reuniao'
+            )
+            ->where('a.cliente_id', $cliente->id)
+            ->when($request->input('appoint_date_from'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->when($request->input('appoint_date_to'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '<=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->where(function ($query) use ($search) {
+                return $query->where('a.activo', 'LIKE', "%{$search}%");
+            })
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->get();
+
+        /*
+          |--------------------------------------------
+          | For table search filter from frontend site inside two table namely courses and courseterms.
+          |--------------------------------------------
+         */
+
+        /*
+          |----------------------------------------------------------------------------------------------------------------------------------
+          | Creating json array with all records based on input from front end site like all,searcheded,pagination record (i.e 10,20,50,100).
+          |----------------------------------------------------------------------------------------------------------------------------------
+         */
+
+        $totalFiltered = $terms->count();
+
+        $data = array();
+        if (!empty($terms)) {
+
+            foreach ($terms as $term) {
+
+                /**
+                 * For HTMl action option like edit and delete
+                 */
+
+                $token = csrf_field();
+
+                // $action_delete = '"'.route('sale-Admin.destroy', $cat->id).'"';
+                $action_delete = route('cliente.agenda.destroy', $term->id);
+
+                $delete = "<form action='{$action_delete}' method='post' onsubmit ='return  confirmDelete()'>
+                {$token}
+                            <input name='_method' type='hidden' value='DELETE'>
+                            <button class='dropdown-item text-center' type='submit'  style='background: transparent;
+    border: none;'>DELETE</button>
+                          </form>";
+
+                /**
+                 * -/End
+                 */
+                $con = '<select name="status" class="appointment-select2" id="status" onchange="change_status(' . "'" . $term->id . "'" . ',' . 'getval(this)' . ',' . "'" . 'agenda' . "'" . ')">';
+
+                //for open status
+                $con .= "<option value='OPEN'";
+                if ($term->status == 'OPEN') {
+                    $con .= "selected";
+                }
+                $con .= ">Aberto</option>";
+
+                //for CANCEL BY CLIENT status
+
+                $con .= "<option value='CANCEL BY CLIENT'";
+                if ($term->status == 'CANCEL BY CLIENT') {
+                    $con .= "selected";
+                }
+                $con .= ">Cancelado pelo cliente</option>";
+
+
+                //for CANCEL BY ADVOCATE status
+                $con .= "<option value='CANCEL BY ADVOCATE'";
+                if ($term->status == 'CANCEL BY ADVOCATE') {
+                    $con .= "selected";
+                }
+                $con .= ">Cancelado pelo advogado(a)</option>";
+
+
+                $con .= "</select>";
+
+
+                if ($isEdit) {
+                    $nestedData['is_active'] = $con;
+                } else {
+                    $nestedData['is_active'] = "";
+                }
+
+                if (empty($request->input('search.value'))) {
+                    $final = $totalRec - $start;
+                    $nestedData['id'] = $final;
+                    $totalRec--;
+                } else {
+                    $start++;
+                    $nestedData['id'] = $start;
+                }
+                $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
+                $nestedData['time'] = date('g:i a', strtotime($term->time));
+
+                $nestedData['vc_tipo'] = ucfirst($term->vc_tipo ?? '-');
+                $nestedData['vc_pataforma'] = $term->vc_plataforma ?? '-';
+                $nestedData['link_reuniao'] = $term->reuniao_link
+                    ? "<a href='{$term->reuniao_link}' target='_blank'>Acessar</a>"
+                    : '-';
+
+                $nestedData['action'] = $this->action([
+                    'edit' => route('cliente.agenda.edit', encrypt($term->id)),
+                    'edit_permission' => 1
+                ]);
+
+                $data[] = $nestedData;
+            }
+        }
+
+        $json_data = array(
+            "draw" => intval($request->input('draw')),
+            "recordsTotal" => intval($totalData),
+            "recordsFiltered" => intval($totalFiltered),
+            "data" => $data
+        );
+
+        echo json_encode($json_data);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        $appointment = Agenda::findOrFail(decrypt($id));
+
+        return view('cliente.appointment.appointment_edit', compact('appointment'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        $agenda = Agenda::findOrFail($id);
+
+        $agenda->assunto = addslashes($request->assunto);
+        $agenda->data = date('Y-m-d H:i', strtotime(LogActivity::commonDateFromat($request->date)));
+        $agenda->hora = date('H:i:s', strtotime($request->time));
+        $agenda->observacao = $request->note;
+        $agenda->save();
+
+        return redirect()->route('cliente.agenda.index')->with('success', "Agenda actualizada.");
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        //
+    }
+}
