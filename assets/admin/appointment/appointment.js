@@ -7,6 +7,7 @@ $('#add_appointment').validate({
             required: true
         },
         data: "required",
+        email:" unique:users,email",
         hora: "required",
         new_client: "required",
         exists_client: "required",
@@ -17,6 +18,7 @@ $('#add_appointment').validate({
         },
         data: "Por favor, insere a data.",
         hora: "Por favor, insere a hora.",
+        email: "Este email já está a ser usado.",
         new_client: "Por favor, insere o nome do cliente.",
         exists_client: "Por favor, seleccione o cliente."
     },

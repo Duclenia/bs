@@ -99,18 +99,15 @@ class AppointmentController extends Controller
      */
     public function store(StoreAppointment $request)
     {
-
+    
         try {
             $agenda = $this->criarAgenda($request);
 
             if ($request->type_agenda == "reuniao") {
-               return $this->agendaReuniao->store($agenda, $request);
-
+                return $this->agendaReuniao->store($agenda, $request);
             } else {
-              return  $this->agendaConsulta->store($agenda, $request);
+                return  $this->agendaConsulta->store($agenda, $request);
             }
-
-
         } catch (\Exception $e) {
             // Em produção, use log ao invés de dd()
             dd(['message' => $e->getMessage(), 'trace' => $e->getTrace()]);
@@ -352,14 +349,14 @@ class AppointmentController extends Controller
         else
             $agenda->cliente_id = $request->exists_client;
 
-            Agenda::findOrFail('id', $id)->update([
+        Agenda::findOrFail('id', $id)->update([
             'assunto' => $request->assunto,
             'telefone' => $request->mobile,
             'data' => date('Y-m-d H:i', strtotime(LogActivity::commonDateFromat($request->date))),
             'hora' => date('H:i:s', strtotime($request->time)),
             'observacao' => $request->note,
 
-            ]);
+        ]);
 
 
 

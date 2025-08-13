@@ -225,7 +225,7 @@ class ClienteController extends Controller
         $cliente->nif = addslashes($request->nif);
 
         if ($request->tipo_cliente == 2) {
-            $cliente->nome = addslashes(($request->f_name? $request->f_name : ''));
+            $cliente->nome = addslashes(($request->f_name ? $request->f_name : ''));
             $cliente->sobrenome = addslashes($request->l_name);
             $cliente->estado_civil = $request->estado_civil;
             $cliente->regime_casamento = $request->regime_casamento;
@@ -293,7 +293,7 @@ class ClienteController extends Controller
 
     public function storeCliente(Request $request)
     {
-
+      
         if (Gate::denies('client_add'))
             return back();
 
@@ -313,7 +313,6 @@ class ClienteController extends Controller
                 $documento->ndi = addslashes($request->ndi);
                 $documento->tipo = $request->documento;
                 $documento->data_validade = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->ddvdoc)));
-
                 $documento->save();
 
                 if ($documento->save())
@@ -334,7 +333,7 @@ class ClienteController extends Controller
 
                 $nomeCliente = $request->new_client == 2 ? ucfirst($request->f_name . ' ' . $request->l_name) : ucfirst($request->instituicao);
 
-              //  Mail::to($request->email)->queue(new DadosAcesso($nomeCliente, $user->email, $password));
+                //  Mail::to($request->email)->queue(new DadosAcesso($nomeCliente, $user->email, $password));
             }
         }
 
@@ -343,14 +342,14 @@ class ClienteController extends Controller
         $cliente->nif = addslashes($request->nif);
 
         if ($request->new_client == 2) {
-            $cliente->nome = addslashes( $request->f_name);
+            $cliente->nome = addslashes($request->f_name);
             $cliente->sobrenome = addslashes($request->l_name);
             $cliente->estado_civil = $request->estado_civil;
             $cliente->regime_casamento = $request->regime_casamento;
         }
 
         $cliente->telefone = $request->mobile;
-        $cliente->nome=$request->instituicao;
+        $cliente->nome = $request->instituicao;
         $cliente->alternate_no = $request->alternate_no;
         $cliente->endereco = addslashes($request->address);
         $cliente->pais_id = $request->country;
@@ -405,9 +404,9 @@ class ClienteController extends Controller
         }
 
         if ($cliente->telefone)
-           // $this->enviarSMS($cliente->telefone, $codigo_verificacao);
+            // $this->enviarSMS($cliente->telefone, $codigo_verificacao);
 
-        return $cliente->id;
+            return $cliente->id;
     }
     /**
      * Display the specified resource.

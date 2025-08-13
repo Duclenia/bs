@@ -20,9 +20,14 @@ class CreateAgendamentoConsultasTable extends Migration
             $table->string('vc_pataforma');
             $table->longText('vc_nota')->nullable()->default('text');
             $table->boolean('it_termo')->default(false);
-              $table->boolean('it_envDocs')->default(false);
+            $table->boolean('it_envDocs')->default(false);
             $table->unsignedBigInteger('agenda_id');
-            $table->foreign('agenda_id')->references('id')->on('agenda');
+            $table->foreign('agenda_id')
+                ->references('id')
+                ->on('agenda')
+                ->onUpdate('cascade')
+                ->onDelete('cascade');
+
             $table->timestamps();
         });
     }

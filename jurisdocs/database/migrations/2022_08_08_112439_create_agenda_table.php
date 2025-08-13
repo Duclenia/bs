@@ -24,11 +24,11 @@ class CreateAgendaTable extends Migration
             $table->string('nome',100)->nullable();
             $table->text('observacao')->nullable();
             $table->enum('activo',['OPEN','CANCEL BY CLIENT','CANCEL BY ADVOCA'])->default('OPEN');
-            
+
             $table->foreign('cliente_id')
                     ->references('id')
                     ->on('cliente');
-            
+
             $table->timestamps();
         });
     }
