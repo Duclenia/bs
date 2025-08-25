@@ -20,7 +20,7 @@ class TipoTribunalController extends Controller {
     use DatatablTrait;
 
     public function __construct() {
-        
+
     }
 
     /**
@@ -236,7 +236,7 @@ class TipoTribunalController extends Controller {
             $statuscode = 200;
         }
         $status = $request->status == 'Yes' ? 'Yes' : 'No';
-        $message = 'Court Type status changed successfully.';
+        $message = 'Court Type Estado alterado com sucesso.';
 
         return response()->json([
                     'success' => true,

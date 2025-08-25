@@ -20,7 +20,7 @@ class ImpostoController extends Controller
     use DatatablTrait;
 
     public function __construct() {
-        
+
     }
 
     /**
@@ -172,7 +172,7 @@ class ImpostoController extends Controller
 
 
         $imposto = new Imposto();
-        
+
         $imposto->nome = $request->name;
         $imposto->per = $request->per;
         $imposto->note = $request->note;
@@ -203,7 +203,7 @@ class ImpostoController extends Controller
      */
     public function edit($id)
     {
-        
+
         $data['tax'] = Imposto::findorfail($id);
         return response()->json([
                     'html' => view('admin.configuracoes.imposto.tax_edit', $data)->render()
@@ -257,7 +257,7 @@ class ImpostoController extends Controller
             $statuscode = 200;
         }
         $status = $request->status == 'Yes' ? 'Yes' : 'No';
-        $message = 'Tax status changed successfully.';
+        $message = 'Tax Estado alterado com sucesso.';
 
         return response()->json([
                     'success' => true,

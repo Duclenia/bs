@@ -293,7 +293,7 @@ class ClienteController extends Controller
 
     public function storeCliente(Request $request)
     {
-      
+
         if (Gate::denies('client_add'))
             return back();
 
@@ -333,7 +333,7 @@ class ClienteController extends Controller
 
                 $nomeCliente = $request->new_client == 2 ? ucfirst($request->f_name . ' ' . $request->l_name) : ucfirst($request->instituicao);
 
-                //  Mail::to($request->email)->queue(new DadosAcesso($nomeCliente, $user->email, $password));
+                  Mail::to($request->email)->queue(new DadosAcesso($nomeCliente, $user->email, $password));
             }
         }
 
@@ -404,7 +404,7 @@ class ClienteController extends Controller
         }
 
         if ($cliente->telefone)
-            // $this->enviarSMS($cliente->telefone, $codigo_verificacao);
+             $this->enviarSMS($cliente->telefone, $codigo_verificacao);
 
             return $cliente->id;
     }

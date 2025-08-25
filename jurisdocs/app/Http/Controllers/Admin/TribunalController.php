@@ -25,9 +25,9 @@ class TribunalController extends Controller
 
     public function __construct(AreaProcessual $areaprocessual, Tribunal $tribunal)
     {
-        
+
         $this->areaprocessual = $areaprocessual;
-        
+
         $this->tribunal = $tribunal;
     }
 
@@ -169,13 +169,13 @@ class TribunalController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()->all()]);
         }
-        
+
         $tribunal = $this->tribunal->create(['nome' => addslashes($request->court_name)]);
 
         $tribunal->areasprocessuais()->sync($request->areaprocessual);
 
         if ($tribunal) {
-            
+
             return response()->json([
                         'success' => true,
                         'message' => 'Tribunal registado',
@@ -200,12 +200,12 @@ class TribunalController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit($id) {
-        
-        
+
+
         $data['tribunal'] = Tribunal::findorfail($id);
-        
+
         $data['areasprocessuais'] = AreaProcessual::all();
-        
+
         return response()->json([
                     'html' => view('admin.configuracoes.tribunal.court_edit', $data)->render()
         ]);
@@ -219,7 +219,7 @@ class TribunalController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id) {
-        
+
         $validator = Validator::make($request->all(), [
                     'court_name' => 'required',
                     'areaprocessual' => 'required'
@@ -230,11 +230,11 @@ class TribunalController extends Controller
         }
 
         $tribunal = $this->tribunal->findorfail($id);
-        
+
         $tribunal->update(['nome' => addslashes($request->court_name)]);
-        
+
         $tribunal->areasprocessuais()->sync($request->areaprocessual);
-        
+
         return response()->json([
                     'success' => true,
                     'message' => 'Dados actualizados',
@@ -258,7 +258,7 @@ class TribunalController extends Controller
             $statuscode = 200;
         }
         $status = $request->status == 'Yes' ? 'S' : 'N';
-        $message = 'Court status changed successfully.';
+        $message = 'Court Estado alterado com sucesso.';
 
         return response()->json([
                     'success' => true,
@@ -269,7 +269,7 @@ class TribunalController extends Controller
     public function destroy($id)
     {
         $count = 0;
-        
+
         $count += TribunalAreaprocessual::where('tribunal_id', $id)->count();
         $count += Processo::where('tribunal_id', $id)->count();
 

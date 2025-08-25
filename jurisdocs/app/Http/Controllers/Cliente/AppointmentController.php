@@ -97,7 +97,7 @@ class AppointmentController extends Controller
 
             if ($request->type_agenda == "reuniao") {
                 AgendamentoReuniao::create([
-                    'vc_entidade' => ($request->vc_entidade) ? $request->vc_entidade : $cliente->instituicao,
+                    'vc_entidade' => ($request->vc_entidade) ? $request->vc_entidade : $request->instituicao,
                     'vc_motivo' => addslashes($request->vc_motivo),
                     'vc_pataforma' => $request->vc_plataforma,
                     'link_reuniao' => $request->vc_link_acesso,

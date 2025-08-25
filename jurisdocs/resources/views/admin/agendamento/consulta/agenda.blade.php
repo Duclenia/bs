@@ -45,7 +45,6 @@
 
     </div>
 
-    {{-- Nota síntese / principal preocupação --}}
     <div class="row">
         <div class="col-md-12 form-group">
             <label for="vc_motivo">Nota síntese / Principal preocupação <span class="text-danger">*</span></label>
@@ -53,19 +52,19 @@
         </div>
     </div>
 
-    {{-- Data e Hora --}}
     <div class="row">
         <div class="col-md-4 form-group">
             <label for="date">Data preferencial <span class="text-danger">*</span></label>
-            <input type="text" class="form-control datepicker" id="date" name="date"
-                value="{{ old('date') }}" required>
+            <input type="text" class="form-control" id="data" name="date" value="{{ old('date') }}"
+                required>
         </div>
 
         <div class="col-md-4 form-group">
             <label for="time">Hora preferencial <span class="text-danger">*</span></label>
-            <input type="text" class="form-control timepicker" id="time" name="time"
-                value="{{ old('time') }}" required>
+            <input type="text" class="form-control" id="hora" name="time" value="{{ old('time') }}"
+                required>
         </div>
+
         <div class="col-md-4 form-group">
             <label for="vc_plataforma">Plataforma preferida <span class="text-danger">*</span></label>
             <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
@@ -84,13 +83,9 @@
             <label for="vc_link_acesso">Link de Acesso</label>
             <input type="text" class="form-control" id="vc_link_acesso" name="vc_link_acesso" readonly>
         </div>
-
-
-
     </div>
-
-    {{-- Enviar documentos --}}
     <br>
+
     <div class="row">
         <div class="col-md-6 form-group">
             <label> Deseja enviar documentos antes da consulta?</label><br>
@@ -106,7 +101,6 @@
         </div>
     </div>
 
-    {{-- Consentimento --}}
     <div class="row">
         <div class="col-md-12 form-group">
             <div class="form-check">

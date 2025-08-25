@@ -30,7 +30,7 @@ class EstadoProcessoController extends Controller
         $user = auth()->user();
         if (!$user->can('case_status_list'))
             return redirect()->back();
-        
+
         return view('admin.configuracoes.case-status.case_status');
     }
 
@@ -42,7 +42,7 @@ class EstadoProcessoController extends Controller
     public function create()
     {
         $dados['areasprocessuais'] = AreaProcessual::all();
-        
+
         return response()->json([
                     'html' => view('admin.configuracoes.case-status.case_status_create', $dados)->render()
         ]);
@@ -143,7 +143,7 @@ class EstadoProcessoController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request) 
+    public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
                     'case_status' => 'required',
@@ -154,10 +154,10 @@ class EstadoProcessoController extends Controller
         }
 
         $casetype = new EstadoProcesso();
-        
+
         $casetype->estado = addslashes($request->case_status);
         $casetype->save();
-        
+
         $casetype->areasprocessuais()->sync($request->areaprocessual);
 
         return response()->json([
@@ -187,7 +187,7 @@ class EstadoProcessoController extends Controller
     {
 
         $data['CaseStatus'] = EstadoProcesso::findorfail($id);
-        
+
         $data['areasprocessuais'] = AreaProcessual::all();
 
         return response()->json([
@@ -215,11 +215,11 @@ class EstadoProcessoController extends Controller
         }
 
         $estadoProcesso = EstadoProcesso::findorfail($id);
-        
+
         $estadoProcesso->estado = $request->case_status;
-        
+
         $estadoProcesso->save();
-        
+
         $estadoProcesso->areasprocessuais()->sync($request->areaprocessual);
 
         return response()->json([
@@ -236,7 +236,7 @@ class EstadoProcessoController extends Controller
      */
     public function changeStatus(Request $request)
     {
-        
+
         $statuscode = 400;
         $data = EstadoProcesso::findOrFail($request->id);
         $data->activo = $request->status == 'true' ? 'S' : 'N';
@@ -245,7 +245,7 @@ class EstadoProcessoController extends Controller
             $statuscode = 200;
         }
         $status = $request->status == 'Yes' ? 'Yes' : 'No';
-        $message = 'Case status changed successfully.';
+        $message = 'Case Estado alterado com sucesso.';
 
         return response()->json([
                     'success' => true,

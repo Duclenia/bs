@@ -28,7 +28,7 @@
 
 <div class="row">
     <div class="col-md-12 col-sm-12 col-xs-12">
-        
+
         <div class="x_panel">
             <form id="add_client" name="add_client" role="form" method="POST" autocomplete="nope"
                   action="{{route('clients.store')}}">
@@ -86,14 +86,14 @@
                         <label for="ndi"> N&ordm do documento de Identifica&ccedil;&atilde;o <span class="text-danger">*</span></label>
                         <input type="text" name="ndi" class="form-control text-uppercase" value="{{old('ndi')}}" id="ndi" required
                                data-msg-required="Por favor, insere o nº do documento de identificação"
-                               > 
+                               >
                     </div>
 
                     <div class="col-md-4 col-sm-12 col-xs-12 form-group ddvdoc" style="display: none;">
                         <label for="ddvdoc">Data de Validade do documento de identifica&ccedil;&atilde;o </label>
                         <input type="text" name="ddvdoc" class="form-control" id="ddvdoc" autocomplete="off"
 
-                               data-inputmask-alias="{{$date_format_datepiker}}" 
+                               data-inputmask-alias="{{$date_format_datepiker}}"
                                data-mask
 
                                >
@@ -226,7 +226,7 @@
                                         <div class="col-md-4 col-sm-12 col-xs-12 form-group">
                                             <label for="middlename">{{__('Middle Name')}} <span
                                                     class="text-danger">*</span></label>
-                                            <input type="text" name="middlename" id="middlename" 
+                                            <input type="text" name="middlename" id="middlename"
                                                    data-rule-required="true"
                                                    data-msg-required="Por favor, insere o nome do meio."
                                                    class="form-control">
@@ -242,7 +242,7 @@
                                         <div class="col-md-4 col-sm-12 col-xs-12 form-group">
                                             <label for="mobile_client">Telefone <span
                                                     class="text-danger">*</span></label>
-                                            <input type="text" name="mobile_client" id="mobile_client" 
+                                            <input type="text" name="mobile_client" id="mobile_client"
                                                    data-rule-required="true"
                                                    data-msg-required="Por favor, insere o n&ordm; de telefone."
                                                    data-rule-number="true" data-msg-number="please enter digit 0-9."

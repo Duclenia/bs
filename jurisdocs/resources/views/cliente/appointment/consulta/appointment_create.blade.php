@@ -23,7 +23,7 @@
                         {{ csrf_field() }}
                         <div class="row">
                             <div class="x_content">
-                                 <div class="col-md-12 form-group">
+                                <div class="col-md-12 form-group">
                                     <label for="mobile">Nome</label>
                                     <input type="text" class="form-control" id="exists_client" name="instituicao"
                                         value="{{ old('exists_client', Auth::user()->cliente->nome . ' ' . Auth::user()->cliente->sobrenome) }}"
@@ -32,7 +32,8 @@
                                 <div class="col-md-6 form-group">
                                     <label for="mobile">Contacto telefónico (opcional)</label>
                                     <input type="number" class="form-control" id="mobile" name="mobile"
-                                        value="{{ old('mobile', Auth::user()->cliente->telefone) }}" autocomplete="off" readonly>
+                                        value="{{ old('mobile', Auth::user()->cliente->telefone) }}" autocomplete="off"
+                                        readonly>
                                 </div>
 
                                 <div class="col-md-6 form-group">
@@ -75,15 +76,61 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
-                    <p><strong>Resumo:</strong></p>
-                    <p>Os dados fornecidos neste formulário serão utilizados exclusivamente para fins de agendamento e
-                        comunicação relativa à reunião marcada.</p>
-                    <p>Garantimos que não serão partilhados com terceiros sem o seu consentimento, conforme previsto na Lei
-                        Geral de Proteção de Dados.</p>
+                <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+                    <h6>1. Introdução</h6>
+                    <p>Esta Política de Privacidade descreve como coletamos, usamos e protegemos as informações fornecidas
+                        por você ao utilizar nossos serviços. Ao aceitar, você concorda com todos os termos aqui descritos.
+                    </p>
+
+                    <h6>2. Coleta de Dados</h6>
+                    <p>Coletamos informações pessoais como nome, e-mail, telefone e outros dados relevantes para a execução
+                        de nossos serviços. Esses dados são fornecidos diretamente por você através de formulários, ou de
+                        forma automática, através de cookies e tecnologias semelhantes.</p>
+
+                    <h6>3. Uso das Informações</h6>
+                    <p>As informações coletadas serão utilizadas para:
+                    <ul>
+                        <li>Realizar agendamentos e prestar serviços solicitados;</li>
+                        <li>Entrar em contato para confirmar, alterar ou cancelar compromissos;</li>
+                        <li>Enviar comunicados importantes relacionados aos serviços;</li>
+                        <li>Cumprir obrigações legais e regulatórias.</li>
+                    </ul>
+                    </p>
+
+                    <h6>4. Compartilhamento de Dados</h6>
+                    <p>Não compartilhamos suas informações pessoais com terceiros, exceto:
+                    <ul>
+                        <li>Quando houver consentimento explícito;</li>
+                        <li>Por exigência legal, judicial ou regulatória;</li>
+                        <li>Para execução de serviços contratados por você, com parceiros de confiança.</li>
+                    </ul>
+                    </p>
+
+                    <h6>5. Armazenamento e Segurança</h6>
+                    <p>Os dados são armazenados de forma segura e protegidos contra acesso não autorizado. Utilizamos
+                        criptografia e protocolos de segurança para preservar a integridade e confidencialidade das
+                        informações.</p>
+
+                    <h6>6. Direitos do Usuário</h6>
+                    <p>Você tem direito a:
+                    <ul>
+                        <li>Acessar, corrigir ou excluir seus dados pessoais;</li>
+                        <li>Revogar seu consentimento a qualquer momento;</li>
+                        <li>Solicitar informações sobre o tratamento dos seus dados.</li>
+                    </ul>
+                    </p>
+
+                    <h6>7. Alterações nesta Política</h6>
+                    <p>Podemos atualizar esta Política de Privacidade periodicamente. Recomendamos que consulte esta página
+                        regularmente para se manter informado sobre quaisquer alterações.</p>
+
+                    <h6>8. Contato</h6>
+                    <p>Para qualquer dúvida ou solicitação relacionada a esta Política, entre em contato pelo e-mail:
+                        <a href="mailto:contato@empresa.com">contato@empresa.com</a>.
+                    </p>
                 </div>
                 <div class="modal-footer">
-                    <a href="#" target="_blank" class="btn btn-link">📄 Ler documento completo</a>
+                    <a href="politica.pdf" target="_blank" class="btn btn-link">Baixar documento</a>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
                 </div>
             </div>
@@ -101,10 +148,21 @@
             const radioNao = document.getElementById('radio-nao');
             const documentoInput = document.getElementById('documento-input');
             const btnSubmitExisting = document.getElementById('btn_submit_existing');
+            const area = document.getElementById('areas_direito');
+            const inputArea = document.getElementById('vc_area_outro');
             checkbox.addEventListener('change', function() {
                 btnSubmit.disabled = !this.checked;
                 btnSubmitExisting.disabled = !this.checked;
             });
+
+            area.addEventListener('change', function() {
+                if (area.value === 'outro') {
+                    inputArea.style.display = 'block';
+                } else {
+                    inputArea.style.display = 'none';
+                }
+            });
+
             radioSim.addEventListener('change', function() {
                 if (this.checked) {
                     documentoInput.style.display = 'block';

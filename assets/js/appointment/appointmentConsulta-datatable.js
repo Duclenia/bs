@@ -21,7 +21,7 @@ var DatatableRemoteAjaxDemo = function () {
             "stateSave": true,
             "lengthMenu": [10, 25, 50],
             "responsive": true,
-            "oLanguage": {sProcessing: "<div class='loader-container'><div id='loader'></div></div>"},
+            "oLanguage": { sProcessing: "<div class='loader-container'><div id='loader'></div></div>" },
             "width": 200,
             // "iDisplayLength": 2,
             "ajax": {
@@ -41,13 +41,13 @@ var DatatableRemoteAjaxDemo = function () {
                 "data": "id"
             },
 
-                {"data": "name"},
-                {"data": "mobile"},
-                {"data": "vc_area"},
-                {"data": "date"},
-                {"data": "time"},
-                {"data": "is_active"},
-                {"data": "action"}
+            { "data": "name" },
+            { "data": "mobile" },
+            { "data": "vc_area" },
+            { "data": "date" },
+            { "data": "time" },
+            { "data": "is_active" },
+            { "data": "action" }
             ],
             drawCallback: function () {
                 $('.appointment-select2').select2();
@@ -63,7 +63,7 @@ var DatatableRemoteAjaxDemo = function () {
             lsitDataInTable();
 
 
-            $("#btn_clear").click(function(){
+            $("#btn_clear").click(function () {
                 $('#date_from').val('');
                 $('#date_to').val('');
                 var d = $('#Appointmentdatatable').DataTable();
@@ -188,26 +188,26 @@ function ajaxindicatorstart(text) {
 function change_status(id, status, table) {
 
     $.confirm({
-        title: 'Status Confirmation',
-        content: 'Its smooth to do multiple confirms at a time. <br> Click confirm or cancel for another modal',
+        title: 'Confirmação de estado',
+        content: 'É fácil fazer várias confirmações ao mesmo tempo. <br> Clique em confirmar ou cancelar para outro modal',
         icon: 'fa fa-question-circle',
         animation: 'scale',
         closeAnimation: 'scale',
         opacity: 0.5,
         buttons: {
             'confirm': {
-                text: 'Proceed',
+                text: 'Continuar',
                 btnClass: 'btn-blue',
                 action: function () {
                     $.confirm({
-                        title: 'Are you sure you want to change status?',
-                        content: 'Critical actions can have multiple confirmations like this one.',
+                        title: 'Tem a certeza de que pretende alterar o estado?',
+                        content: 'As ações críticas podem ter múltiplas confirmações como esta.',
                         icon: 'fa fa-warning',
                         animation: 'scale',
                         closeAnimation: 'zoom',
                         buttons: {
                             confirm: {
-                                text: 'Yes, sure!',
+                                text: 'Sim!',
                                 btnClass: 'btn-orange',
                                 action: function () {
                                     // ajax adding data to database
@@ -220,7 +220,7 @@ function change_status(id, status, table) {
                                         url: common_change_state,
                                         type: "POST",
                                         dataType: "JSON",
-                                        data: {id: id, status: status, table: table},
+                                        data: { id: id, status: status, table: table },
                                         async: false,
                                         success: function (data) {
                                             if (data.errors) {
@@ -239,13 +239,13 @@ function change_status(id, status, table) {
                                                 message.fire({
                                                     type: 'success',
                                                     title: 'Sucesso',
-                                                    text: "Status changed successfully."
+                                                    text: "Estado alterado com sucesso."
                                                 });
                                                 var d = $('#Appointmentdatatable').DataTable();
                                                 d.destroy();
                                                 // tab_appoint_list();
                                                 DatatableRemoteAjaxDemo.init()
-                                                //success_massage('Status changed successfully.');
+                                                //success_massage('Estado alterado com sucesso.');
                                                 //tab_appoint_list();
                                             }
                                         },
@@ -260,7 +260,7 @@ function change_status(id, status, table) {
                                 d.destroy();
                                 // tab_appoint_list();
                                 DatatableRemoteAjaxDemo.init()
-                                $.alert('You clicked on <strong>cancel</strong>');
+                                $.alert('Você cancelou ');
                             }
                         }
                     });
@@ -271,7 +271,7 @@ function change_status(id, status, table) {
                 d.destroy();
                 // tab_appoint_list();
                 DatatableRemoteAjaxDemo.init();
-                $.alert('You clicked on <strong>cancel</strong>');
+                $.alert('Você cancelou ');
             }
         }
     });

@@ -70,8 +70,9 @@ class AppointmentReuniaoController extends Controller
 
         $agendaReuniao = new AgendamentoReuniao();
         if ($request->type == "new") {
-            $agendaReuniao->vc_entidade = ($request->instituicao) ? $request->instituicao : $request->f_name . ' ' . $request->l_name;
+            $agendaReuniao->vc_entidade = ($request->instituicao) ? $request->instituicao : $request->nome . ' ' . $request->sobrenome;
         } else {
+
             $cliente = $this->cliente->where('id', $request->exists_client)->first();
             $agendaReuniao->vc_entidade = ($request->vc_entidade) ? $request->vc_entidade : $cliente->full_name;
         }
@@ -82,7 +83,7 @@ class AppointmentReuniaoController extends Controller
         $agendaReuniao->agenda_id = $a->id;
         $agendaReuniao->it_termo = $request->it_termo;
         $agendaReuniao->save();
-        return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião criado.");
+        return redirect()->route('reuniao.index')->with('success', "Agendamento de reuni達o criado.");
     }
 
 
@@ -128,7 +129,7 @@ class AppointmentReuniaoController extends Controller
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_reuniaos as ac', 'ac.agenda_id', '=', 'a.id')
             ->select('ac.vc_entidade as vc_entidade', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
-            ->orderBy('ac.id', 'DESC')
+            ->orderBy('id', 'DESC')
             ->when($request->input('appoint_date_from'), function ($query, $iterm) {
                 $iterm = LogActivity::commonDateFromat($iterm);
                 return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
@@ -206,14 +207,17 @@ class AppointmentReuniaoController extends Controller
                     $nestedData['is_active'] = "";
                 }
 
-                if (empty($request->input('search.value'))) {
-                    $final = $totalRec - $start;
-                    $nestedData['id'] = $final;
-                    $totalRec--;
-                } else {
-                    $start++;
-                    $nestedData['id'] = $term->id;
-                }
+                // if (empty($request->input('search.value'))) {
+                //     $final = $totalRec - $start;
+                //     $nestedData['id'] = $final;
+                //     $totalRec--;
+                //      \Log::debug("message". $nestedData['id'] );
+                // } else {
+                //     $start++;
+                //     $nestedData['id'] = $term->id;
+                //      \Log::debug("message_id2". $nestedData['id'] );
+                // }
+                $nestedData['id'] = $term->id;
                 $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
                 $nestedData['time'] = date('g:i a', strtotime($term->time));
                 $nestedData['mobile'] = htmlspecialchars($term->mobile);
@@ -227,7 +231,7 @@ class AppointmentReuniaoController extends Controller
                 } else {
                     $nestedData['action'] = [];
                 }
-
+ \Log::debug("DATA".json_encode($nestedData['id']));
                 $data[] = $nestedData;
             }
         }
@@ -277,7 +281,7 @@ class AppointmentReuniaoController extends Controller
             'vc_nota' => addslashes($request->vc_nota),
             'it_termo' => $request->it_termo
         ]);
-        return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião atualizado.");
+        return redirect()->route('reuniao.index')->with('success', "Agendamento de reuni達o atualizado.");
     }
 
     /**

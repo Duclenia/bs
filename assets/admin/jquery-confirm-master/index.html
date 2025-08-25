@@ -704,12 +704,12 @@
                             opacity: 0.5,
                             buttons: {
                                 'confirm': {
-                                    text: 'Proceed',
+                                    text: 'Continuar',
                                     btnClass: 'btn-blue',
                                     action: function () {
                                         $.confirm({
                                             title: 'This maybe critical',
-                                            content: 'Critical actions can have multiple confirmations like this one.',
+                                            content: 'As ações críticas podem ter múltiplas confirmações como esta.',
                                             icon: 'fa fa-warning',
                                             animation: 'scale',
                                             closeAnimation: 'zoom',
@@ -722,19 +722,19 @@
                                                     }
                                                 },
                                                 cancel: function () {
-                                                    $.alert('you clicked on <strong>cancel</strong>');
+                                                    $.alert('Você cancelou ');
                                                 }
                                             }
                                         });
                                     }
                                 },
                                 cancel: function () {
-                                    $.alert('you clicked on <strong>cancel</strong>');
+                                    $.alert('Você cancelou ');
                                 },
                                 moreButtons: {
                                     text: 'something else',
                                     action: function () {
-                                        $.alert('you clicked on <strong>something else</strong>');
+                                        $.alert('Você cancelou <strong>something else</strong>');
                                     }
                                 },
                             }
@@ -851,7 +851,7 @@
                                     }
                                 },
                                 cancelAction: {
-                                    text: 'Cancel',
+                                    text: 'Cancelar',
                                     action: function () {
                                         $.alert('Ben just got saved!');
                                     }
@@ -1447,12 +1447,12 @@ a.toggle(); // toggle open close.</code></pre>
                                 buttons: {
                                     hey: function () {
                                         // here the button key 'hey' will be used as the text.
-                                        $.alert('You clicked on "hey".');
+                                        $.alert('Você cancelou "hey".');
                                     },
                                     heyThere: {
                                         text: 'hey there!', // With spaces and symbols
                                         action: function () {
-                                            $.alert('You clicked on "heyThere"');
+                                            $.alert('Você cancelou "heyThere"');
                                         }
                                     }
                                 }
@@ -1464,12 +1464,12 @@ a.toggle(); // toggle open close.</code></pre>
     buttons: {
         hey: function () {
             // here the button key 'hey' will be used as the text.
-            $.alert('You clicked on "hey".');
+            $.alert('Você cancelou "hey".');
         },
         heyThere: {
             text: 'hey there!', // With spaces and symbols
             action: function () {
-                $.alert('You clicked on "heyThere"');
+                $.alert('Você cancelou "heyThere"');
             }
         }
     }
