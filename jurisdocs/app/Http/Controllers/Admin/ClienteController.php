@@ -225,7 +225,7 @@ class ClienteController extends Controller
         $cliente->nif = addslashes($request->nif);
 
         if ($request->tipo_cliente == 2) {
-            $cliente->nome = addslashes(($request->f_name ? $request->f_name : ''));
+            $cliente->nome = addslashes($request->f_name);
             $cliente->sobrenome = addslashes($request->l_name);
             $cliente->estado_civil = $request->estado_civil;
             $cliente->regime_casamento = $request->regime_casamento;
@@ -342,14 +342,17 @@ class ClienteController extends Controller
         $cliente->nif = addslashes($request->nif);
 
         if ($request->new_client == 2) {
+         
             $cliente->nome = addslashes($request->f_name);
             $cliente->sobrenome = addslashes($request->l_name);
             $cliente->estado_civil = $request->estado_civil;
             $cliente->regime_casamento = $request->regime_casamento;
+        }else{
+             $cliente->nome = $request->instituicao;
         }
 
         $cliente->telefone = $request->mobile;
-        $cliente->nome = $request->instituicao;
+
         $cliente->alternate_no = $request->alternate_no;
         $cliente->endereco = addslashes($request->address);
         $cliente->pais_id = $request->country;
@@ -623,23 +626,19 @@ class ClienteController extends Controller
 
     public function check_client_email_exits(Request $request)
     {
-        if ($request->id == "") {
-            $count = Cliente::where('email', $request->email)->count();
-            if ($count == 0) {
-                return 'true';
-            } else {
-                return 'false';
-            }
+        $count = 0;
+
+        if (empty($request->id)) {
+            $count = User::where('email', $request->email)->count();
         } else {
-            $count = Cliente::where('email', '=', $request->email)
+            $count = User::where('email', '=', $request->email)
                 ->where('id', '<>', $request->id)
                 ->count();
-            if ($count == 0) {
-                return 'true';
-            } else {
-                return 'false';
-            }
         }
+
+        return response()->json([
+            'exists' => $count > 0
+        ]);
     }
 
     public function caseDetail($id)

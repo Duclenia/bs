@@ -11,7 +11,7 @@
     @component('component.heading' , [
 
     'page_title' => 'Agendamento',
-    'action' => route('cliente.agenda.create') ,
+    'action' => route('cliente.reuniao.create') ,
     'text' => 'Agendar',
     'permission' => 1
     ])
@@ -61,13 +61,14 @@
                 <div class="x_content">
 
                     <table id="Appointmentdatatable" class="table appointment_table"
-                           data-url="{{ route('cliente.appointment.list') }}">
+                           data-url="{{ route('cliente.appointmentReuniao.list') }}">
                         <thead>
                             <tr>
                                 <th width="5%">No</th>
+                                <th width="20%">Entidade</th>
+                                <th width="10%">Telefone</th>
                                 <th>Data</th>
                                 <th>Hora</th>
-                                
                                 <th data-orderable="false">Estado</th>
                                 <th data-orderable="false" width='10%'>Ac&ccedil;&atilde;o</th>
                             </tr>
@@ -94,5 +95,6 @@
 
 @push('js')
 <script src="{{asset('assets/admin/jquery-confirm-master/js/jquery-confirm.js')}}"></script>
-<script src="{{asset('assets/cliente/appointment/appointment-datatable.js')}}"></script>
+{{-- <script src="{{asset('assets/cliente/appointment/appointment-datatable.js')}}"></script> --}}
+ <script src="{{ asset('assets/js/appointment/appointmentReuniao-datatable.js') }}"></script>
 @endpush

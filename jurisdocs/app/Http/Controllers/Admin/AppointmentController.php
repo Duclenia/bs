@@ -99,7 +99,7 @@ class AppointmentController extends Controller
      */
     public function store(StoreAppointment $request)
     {
-    
+
         try {
             $agenda = $this->criarAgenda($request);
 
@@ -110,7 +110,7 @@ class AppointmentController extends Controller
             }
         } catch (\Exception $e) {
             // Em produção, use log ao invés de dd()
-            dd(['message' => $e->getMessage(), 'trace' => $e->getTrace()]);
+
             return back()->with('error', 'Erro ao criar agenda.');
         }
     }
@@ -361,6 +361,15 @@ class AppointmentController extends Controller
 
 
         return redirect()->route('agenda.index')->with('success', "Agenda actualizada.");
+    }
+
+    public function checkClientEmailExists(Request $request)
+    {
+        $count = DB::table('users')->where('email', $request->email)->count();
+
+        return response()->json([
+            'exists' => $count > 0
+        ]);
     }
 
     /**

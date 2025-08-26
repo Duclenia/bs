@@ -66,8 +66,7 @@
             </option>
             <option value="Zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom
             </option>
-            <option value="Teams" {{ old('vc_plataforma') == 'Teams' ? 'selected' : '' }}>Teams
-            </option>
+           
             <option value="Chamada Telefónica" {{ old('vc_plataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
                 Chamada Telefónica</option>
             <option value="Presencial" {{ old('vc_plataforma') == 'Presencial' ? 'selected' : '' }}>

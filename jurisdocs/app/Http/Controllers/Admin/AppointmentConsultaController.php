@@ -101,7 +101,19 @@ class AppointmentConsultaController extends Controller
         return redirect()->route('consulta.index')->with('success', "Agendamento de consulta criado.");
     }
 
-    public function show($id) {}
+    public function show($id)
+    {
+        $user = auth()->user();
+        if (!$user->can('appointment_view')) return back();
+
+        $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
+            ->leftJoin('cliente AS cl', 'cl.id', '=', 'agenda.cliente_id')
+            ->where('agenda.id', decrypt($id))
+            ->select('agenda.*', 'ac.*', 'cl.nome as cliente_nome', 'cl.sobrenome as cliente_sobrenome', 'cl.instituicao as cliente_instituicao')
+            ->first();
+
+        return view('admin.agendamento.consulta.appointment_show', $data);
+    }
 
     public function appointmentList(Request $request)
     {
@@ -176,7 +188,31 @@ class AppointmentConsultaController extends Controller
           |----------------------------------------------------------------------------------------------------------------------------------
          */
 
-        $totalFiltered = $terms->count();
+        $totalFiltered = DB::table('agenda AS a')
+            ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
+            ->Join('agendamento_consultas as ac', 'ac.agenda_id', '=', 'a.id')
+            ->select('ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
+            ->when($request->input('appoint_date_from'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->when($request->input('appoint_date_to'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '<=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->where(function ($query) use ($search) {
+                return $query->where('a.telefone', 'LIKE', "%{$search}%")
+                    ->orWhere('a.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.sobrenome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.instituicao', 'LIKE', "%{$search}%")
+                    ->orWhere('ac.vc_area', 'LIKE', "%{$search}%")
+                    ->orWhere('a.activo', 'LIKE', "%{$search}%");
+            })
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->count();
 
         $data = array();
         if (!empty($terms)) {
@@ -237,14 +273,15 @@ class AppointmentConsultaController extends Controller
                     $nestedData['is_active'] = "";
                 }
 
-                if (empty($request->input('search.value'))) {
+               /*  if (empty($request->input('search.value'))) {
                     $final = $totalRec - $start;
                     $nestedData['id'] = $final;
                     $totalRec--;
                 } else {
                     $start++;
                     $nestedData['id'] = $start;
-                }
+                } */
+                 $nestedData['id'] = $term->id;
                 $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
                 $nestedData['time'] = date('g:i a', strtotime($term->time));
 
@@ -256,11 +293,14 @@ class AppointmentConsultaController extends Controller
 
                 if ($isEdit == "1") {
                     $nestedData['action'] = $this->action([
+                        'view' => route('consulta.show', encrypt($term->id)),
                         'edit' => route('consulta.edit', encrypt($term->id)),
                         'edit_permission' => $isEdit,
                     ]);
                 } else {
-                    $nestedData['action'] = [];
+                    $nestedData['action'] = $this->action([
+                        'view' => route('consulta.show', encrypt($term->id)),
+                    ]);
                 }
 
                 $data[] = $nestedData;

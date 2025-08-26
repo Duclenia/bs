@@ -58,8 +58,7 @@
 
                     <div class="col-md-4 col-sm-12 col-xs-12 form-group ddvdoc" style="display: none;">
                         <label for="ddvdoc">Data de Validade do documento de identifica&ccedil;&atilde;o </label>
-                        <input type="text" name="ddvdoc" class="form-control" id="ddvdoc" autocomplete="off"
-                            data-inputmask-alias="{{ $date_format_datepiker }}" data-mask>
+                        <input type="date" name="" class="form-control" id="data_bi" autocomplete="off">
                     </div>
 
 
@@ -292,11 +291,11 @@
 
                 </div>
 
-
                 <input type="hidden" name="date_format_datepiker" id="date_format_datepiker"
                     value="{{ $date_format_datepiker }}">
 
-                <input type="hidden" id="utils"
+
+                    <input type="hidden" id="utils"
                     value="{{ asset('assets/plugins/intl-tel-input/js/utils.js') }}">
 
                 <input type="hidden" name="token-value" id="token-value" value="{{ csrf_token() }}">
@@ -309,7 +308,11 @@
 
                 <input type="hidden" id="language" value="{{ app()->getLocale() }}">
 
-
+                <script>
+                    const data_bi = document.getElementById("data_bi");
+                    const hoje_h = new Date().toISOString().split("T")[0];
+                    data_bi.min = hoje_h;
+                </script>
                 @push('js')
                     <script src="{{ asset('assets/admin/js/selectjs.js') }}"></script>
                     <script src="{{ asset('assets/admin/vendors/repeter/repeater.js') }}"></script>
@@ -345,44 +348,47 @@
 
                     @if (old('tipo_cliente') != '2')
                         <script>
-                            $('.f_name').hide();
-                            $('#f_name').prop('required', false).val('');
+                            $(document).ready(function() {
+                                $('.f_name').hide();
+                                $('#f_name').prop('required', false).val('');
 
-                            $('.l_name').hide();
-                            $('#l_name').prop('required', false).val('');
+                                $('.l_name').hide();
+                                $('#l_name').prop('required', false).val('');
 
-                            $('.instituicao').show();
-                            $('#instituicao').prop('required', true);
+                                $('.instituicao').show();
+                                $('#instituicao').prop('required', true);
 
-                            $('.estado_civil').hide();
+                                $('.estado_civil').hide();
 
-                            $('.regime_casamento').hide();
+                                $('.regime_casamento').hide();
 
-                            $('.documento').hide();
-                            $('#documento').prop('required', false);
+                                $('.documento').hide();
+                                $('#documento').prop('required', false);
 
-                            $('.ndi').hide();
-                            $('#ndi').prop('required', false);
+                                $('.ndi').hide();
+                                $('#ndi').prop('required', false);
 
-                            $('.ddvdoc').hide();
+                                $('.ddvdoc').hide();
 
-                            $('#lb_nif').html('Nº de Identificação Fiscal <span class="text-danger">*</span>');
-                            $('#nif').prop('required', true);
+                                $('#lb_nif').html('Nº de Identificação Fiscal <span class="text-danger">*</span>');
+                                $('#nif').prop('required', true);
+                            });
                         </script>
                     @else
                         <script>
-                            $('.f_name').show();
-                            $('#f_name').prop('required', true);
+                            $(document).ready(function() {
+                                $('.f_name').show();
+                                $('#f_name').prop('required', true);
 
-                            $('.l_name').show();
-                            $('#l_name').prop('required', true);
+                                $('.l_name').show();
+                                $('#l_name').prop('required', true);
 
-                            $('.instituicao').hide();
-                            $('#instituicao').prop('required', false).val('');
+                                $('.instituicao').hide();
+                                $('#instituicao').prop('required', false).val('');
 
-                            $('.estado_civil').show();
+                                $('.estado_civil').show();
 
-                            $('.documento').show();
+                                $('.documento').show();
                             $('#documento').prop('required', true);
 
                             $('.ndi').show();

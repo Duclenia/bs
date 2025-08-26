@@ -131,59 +131,61 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                 <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
-                <h6>1. Introdução</h6>
-                <p>Esta Política de Privacidade descreve como coletamos, usamos e protegemos as informações fornecidas
-                    por você ao utilizar nossos serviços. Ao aceitar, você concorda com todos os termos aqui descritos.</p>
+                <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+                    <h6>1. Introdução</h6>
+                    <p>Esta Política de Privacidade descreve como coletamos, usamos e protegemos as informações fornecidas
+                        por você ao utilizar nossos serviços. Ao aceitar, você concorda com todos os termos aqui descritos.
+                    </p>
 
-                <h6>2. Coleta de Dados</h6>
-                <p>Coletamos informações pessoais como nome, e-mail, telefone e outros dados relevantes para a execução
-                    de nossos serviços. Esses dados são fornecidos diretamente por você através de formulários, ou de
-                    forma automática, através de cookies e tecnologias semelhantes.</p>
+                    <h6>2. Coleta de Dados</h6>
+                    <p>Coletamos informações pessoais como nome, e-mail, telefone e outros dados relevantes para a execução
+                        de nossos serviços. Esses dados são fornecidos diretamente por você através de formulários, ou de
+                        forma automática, através de cookies e tecnologias semelhantes.</p>
 
-                <h6>3. Uso das Informações</h6>
-                <p>As informações coletadas serão utilizadas para:
+                    <h6>3. Uso das Informações</h6>
+                    <p>As informações coletadas serão utilizadas para:
                     <ul>
                         <li>Realizar agendamentos e prestar serviços solicitados;</li>
                         <li>Entrar em contato para confirmar, alterar ou cancelar compromissos;</li>
                         <li>Enviar comunicados importantes relacionados aos serviços;</li>
                         <li>Cumprir obrigações legais e regulatórias.</li>
                     </ul>
-                </p>
+                    </p>
 
-                <h6>4. Compartilhamento de Dados</h6>
-                <p>Não compartilhamos suas informações pessoais com terceiros, exceto:
+                    <h6>4. Compartilhamento de Dados</h6>
+                    <p>Não compartilhamos suas informações pessoais com terceiros, exceto:
                     <ul>
                         <li>Quando houver consentimento explícito;</li>
                         <li>Por exigência legal, judicial ou regulatória;</li>
                         <li>Para execução de serviços contratados por você, com parceiros de confiança.</li>
                     </ul>
-                </p>
+                    </p>
 
-                <h6>5. Armazenamento e Segurança</h6>
-                <p>Os dados são armazenados de forma segura e protegidos contra acesso não autorizado. Utilizamos
-                    criptografia e protocolos de segurança para preservar a integridade e confidencialidade das
-                    informações.</p>
+                    <h6>5. Armazenamento e Segurança</h6>
+                    <p>Os dados são armazenados de forma segura e protegidos contra acesso não autorizado. Utilizamos
+                        criptografia e protocolos de segurança para preservar a integridade e confidencialidade das
+                        informações.</p>
 
-                <h6>6. Direitos do Usuário</h6>
-                <p>Você tem direito a:
+                    <h6>6. Direitos do Usuário</h6>
+                    <p>Você tem direito a:
                     <ul>
                         <li>Acessar, corrigir ou excluir seus dados pessoais;</li>
                         <li>Revogar seu consentimento a qualquer momento;</li>
                         <li>Solicitar informações sobre o tratamento dos seus dados.</li>
                     </ul>
-                </p>
+                    </p>
 
-                <h6>7. Alterações nesta Política</h6>
-                <p>Podemos atualizar esta Política de Privacidade periodicamente. Recomendamos que consulte esta página
-                    regularmente para se manter informado sobre quaisquer alterações.</p>
+                    <h6>7. Alterações nesta Política</h6>
+                    <p>Podemos atualizar esta Política de Privacidade periodicamente. Recomendamos que consulte esta página
+                        regularmente para se manter informado sobre quaisquer alterações.</p>
 
-                <h6>8. Contato</h6>
-                <p>Para qualquer dúvida ou solicitação relacionada a esta Política, entre em contato pelo e-mail:
-                    <a href="mailto:contato@empresa.com">contato@empresa.com</a>.</p>
-            </div>
+                    <h6>8. Contato</h6>
+                    <p>Para qualquer dúvida ou solicitação relacionada a esta Política, entre em contato pelo e-mail:
+                        <a href="mailto:contato@empresa.com">contato@empresa.com</a>.
+                    </p>
+                </div>
                 <div class="modal-footer">
-                     <a href="politica.pdf" target="_blank" class="btn btn-link">Baixar documento</a>
+                    <a href="{{ asset('upload/documento.pdf') }}" download class="btn btn-link">Baixar documento</a>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
                 </div>
             </div>

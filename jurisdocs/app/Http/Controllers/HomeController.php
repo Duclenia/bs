@@ -158,7 +158,7 @@ class HomeController extends Controller
 
         $getAppointment = DB::table('agenda AS a')
                 ->leftJoin('cliente AS c', 'c.id', '=', 'a.cliente_id')
-                ->select('a.id AS id', 'a.activo AS status', 'a.data AS data', 'a.nome AS nome', 'a.nome AS appointment_name', 'c.nome AS first_name', 'c.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+                ->select('a.id AS id', 'a.activo AS status', 'a.data AS data', 'c.nome AS nome', 'a.nome AS appointment_name', 'c.nome AS first_name', 'c.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
                 ->where('a.activo', 'OPEN')
                 ->where('a.data', date('Y-m-d'))
                 ->get();
@@ -177,7 +177,7 @@ class HomeController extends Controller
 
         return view('admin.index', $data);
     }
-    
+
     public function notificacoes()
     {
         return view('notificacoes');

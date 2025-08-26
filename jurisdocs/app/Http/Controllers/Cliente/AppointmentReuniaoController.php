@@ -36,20 +36,17 @@ class AppointmentReuniaoController extends Controller
     public function index()
     {
 
-        return view('admin.agendamento.reuniao.appointment');
+        return view('cliente.appointment.reuniao.appointment');
     }
 
     public function create()
     {
+        $cliente = auth()->user()->cliente;
 
-
-        $data['client_list'] = $this->cliente->where('activo', 'S')->get();
-        $data['country'] = Pais::all();
-        $data['state'] = Provincia::all();
-        $data['tipospessoas'] = TipoPessoa::all();
-        $data['tiposdocumentos'] = TipoDocumento::all();
-
-        return view('admin.agendamento.reuniao.appointment_create', $data);
+        if ($cliente->activo == 'S')
+            return view('cliente.appointment.reuniao.appointment_create');
+        else
+            return back();
     }
 
 
@@ -84,13 +81,31 @@ class AppointmentReuniaoController extends Controller
     }
 
 
-    public function show($id) {}
+    public function show($id)
+    {
+        $user = auth()->user();
+        $cliente = $user->cliente;
+
+        $data['appointment'] = Agenda::join('agendamento_reuniaos AS ar', 'ar.agenda_id', '=', 'agenda.id')
+            ->where('agenda.id', decrypt($id))
+            ->where('agenda.cliente_id', $cliente->id)
+            ->select('agenda.*', 'ar.*')
+            ->first();
+
+        if (!$data['appointment']) {
+            return back()->with('error', 'Reunião não encontrada.');
+        }
+
+        return view('cliente.appointment.reuniao.appointment_show', $data);
+    }
 
     public function appointmentList(Request $request)
     {
 
         $user = auth()->user();
         $isEdit = $user->can('appointment_edit');
+
+        $cliente = $user->cliente;
 
         /*
           |----------------
@@ -111,6 +126,7 @@ class AppointmentReuniaoController extends Controller
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_reuniaos as ac', 'ac.agenda_id', '=', 'a.id')
             ->select('ac.vc_entidade as vc_entidade', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type')
+            ->where('a.cliente_id', $cliente->id)
             ->count();
 
         $totalRec = $totalData;
@@ -127,6 +143,7 @@ class AppointmentReuniaoController extends Controller
             ->Join('agendamento_reuniaos as ac', 'ac.agenda_id', '=', 'a.id')
             ->select('ac.vc_entidade as vc_entidade', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
             ->orderBy('ac.id', 'ASC')
+            ->where('a.cliente_id', $cliente->id)
             ->when($request->input('appoint_date_from'), function ($query, $iterm) {
                 $iterm = LogActivity::commonDateFromat($iterm);
                 return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
@@ -149,7 +166,28 @@ class AppointmentReuniaoController extends Controller
             ->orderBy($order, $dir)
             ->get();
 
-        $totalFiltered = $terms->count();
+        $totalFiltered = DB::table('agenda AS a')
+            ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
+            ->Join('agendamento_reuniaos as ac', 'ac.agenda_id', '=', 'a.id')
+            ->where('a.cliente_id', $cliente->id)
+            ->when($request->input('appoint_date_from'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->when($request->input('appoint_date_to'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '<=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->where(function ($query) use ($search) {
+                return $query->where('a.telefone', 'LIKE', "%{$search}%")
+                    ->orWhere('a.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.sobrenome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.instituicao', 'LIKE', "%{$search}%")
+                    ->orWhere('ac.vc_entidade', 'LIKE', "%{$search}%")
+                    ->orWhere('a.activo', 'LIKE', "%{$search}%");
+            })
+            ->count();
 
         $data = array();
         if (!empty($terms)) {
@@ -169,40 +207,18 @@ class AppointmentReuniaoController extends Controller
                           </form>";
 
 
-                $con = '<select name="status" class="appointment-select2" id="status" onchange="change_status(' . "'" . $term->id . "'" . ',' . 'getval(this)' . ',' . "'" . 'agenda' . "'" . ')">';
-
-                //for open status
-                $con .= "<option value='OPEN'";
+                // Cliente só pode ver o estado, não alterar
                 if ($term->status == 'OPEN') {
-                    $con .= "selected";
-                }
-                $con .= ">Aberto</option>";
-
-                //for CANCEL BY CLIENT status
-
-                $con .= "<option value='CANCEL BY CLIENT'";
-                if ($term->status == 'CANCEL BY CLIENT') {
-                    $con .= "selected";
-                }
-                $con .= ">Cancelado pelo cliente</option>";
-
-
-                //for CANCEL BY ADVOCATE status
-                $con .= "<option value='CANCEL BY ADVOCATE'";
-                if ($term->status == 'CANCEL BY ADVOCATE') {
-                    $con .= "selected";
-                }
-                $con .= ">Cancelado pelo advogado(a)</option>";
-
-
-                $con .= "</select>";
-
-
-                if ($isEdit == "1") {
-                    $nestedData['is_active'] = $con;
+                    $statusText = 'Aberto';
+                } elseif ($term->status == 'CANCEL BY CLIENT') {
+                    $statusText = 'Cancelado pelo cliente';
+                } elseif ($term->status == 'CANCEL BY ADVOCATE') {
+                    $statusText = 'Cancelado pelo advogado';
                 } else {
-                    $nestedData['is_active'] = "";
+                    $statusText = $term->status;
                 }
+
+                $nestedData['is_active'] = $statusText;
 
                 if (empty($request->input('search.value'))) {
                     $final = $totalRec - $start;
@@ -217,14 +233,9 @@ class AppointmentReuniaoController extends Controller
                 $nestedData['mobile'] = htmlspecialchars($term->mobile);
                 $nestedData['vc_entidade'] = htmlspecialchars($term->vc_entidade);
 
-                if ($isEdit == "1") {
-                    $nestedData['action'] = $this->action([
-                        'edit' => route('reuniao.edit', encrypt($term->id)),
-                        'edit_permission' => $isEdit,
-                    ]);
-                } else {
-                    $nestedData['action'] = [];
-                }
+                $nestedData['action'] = $this->action([
+                    'view' => route('cliente.reuniao.show', encrypt($term->id)),
+                ]);
 
                 $data[] = $nestedData;
             }

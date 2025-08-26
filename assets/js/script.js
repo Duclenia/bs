@@ -176,7 +176,7 @@ if(jQuery().validate) {
         }else{
             return true;
         }
-    }, 'This field is required.');
+    }, 'Este campo é de preenchimento obrigatório.');
 
 }
 function ajaxindicatorstart(text)

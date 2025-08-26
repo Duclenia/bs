@@ -96,7 +96,7 @@ return [
     'password'             => 'The password is incorrect.',
     'present'              => 'This field must be present.',
     'regex'                => 'This format is invalid.',
-    'required'             => 'This field is required.',
+    'required'             => 'Este campo é de preenchimento obrigatório.',
     'required_if'          => 'This field is required when :other is :value.',
     'required_unless'      => 'This field is required unless :other is in :values.',
     'required_with'        => 'This field is required when :values is present.',

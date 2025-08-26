@@ -57,7 +57,7 @@ class AppointmentController extends Controller
         $cliente = auth()->user()->cliente;
 
         if ($cliente->activo == 'S')
-            return view('cliente.appointment.appointment_create');
+            return view('cliente.appointment.reuniao.appointment_create');
         else
             return back();
     }
@@ -96,33 +96,35 @@ class AppointmentController extends Controller
             $agenda->save();
 
             if ($request->type_agenda == "reuniao") {
-                AgendamentoReuniao::create([
-                    'vc_entidade' => ($request->vc_entidade) ? $request->vc_entidade : $request->instituicao,
-                    'vc_motivo' => addslashes($request->vc_motivo),
-                    'vc_pataforma' => $request->vc_plataforma,
-                    'link_reuniao' => $request->vc_link_acesso,
-                    'vc_nota' => addslashes($request->vc_nota),
-                    'agenda_id' => $agenda->id,
-                    'it_termo' => $request->it_termo
-                ]);
-            } else {
-                AgendamentoConsulta::create([
-                    'vc_pataforma' => $request->vc_plataforma,
-                    'link_reuniao' => $request->vc_link_acesso,
-                    'vc_nota' => addslashes($request->vc_nota),
-                    'agenda_id' => $agenda->id,
-                    'it_termo' => $request->it_termo,
-                    'vc_area' => $request->vc_area ? $request->vc_area : $request->vc_area_outro,
-                    'vc_tipo' => $request->vc_tipo,
-                    'it_envDocs' => $request->it_envDocs ? $request->it_envDocs : 0,
-                    'vc_caminho_documento' => $request->vc_doc
-                ]);
-            }
 
-            return redirect()->route('cliente.agenda.index')->with('success', "Agenda criada.");
+                $agendaReuniao = new AgendamentoReuniao();
+                $agendaReuniao->vc_entidade =  ($request->vc_entidade) ? $request->vc_entidade : $request->instituicao;
+
+                $agendaReuniao->vc_motivo = addslashes($request->vc_motivo);
+                $agendaReuniao->vc_pataforma = $request->vc_plataforma;
+                $agendaReuniao->link_reuniao = $request->vc_link_acesso;
+                $agendaReuniao->vc_nota = addslashes($request->vc_nota);
+                $agendaReuniao->agenda_id = $agenda->id;
+                $agendaReuniao->it_termo = $request->it_termo;
+                $agendaReuniao->save();
+                return redirect()->route('cliente.reuniao.index')->with('success', "Agenda criada.");
+            } else {
+                $agendaconsulta = new AgendamentoConsulta();
+                $agendaconsulta->vc_tipo = $request->vc_tipo;
+                $agendaconsulta->vc_area = $request->vc_area ? $request->vc_area : $request->vc_area_outro;
+                $agendaconsulta->vc_pataforma = $request->vc_plataforma;
+                $agendaconsulta->link_reuniao = $request->vc_link_acesso;
+                $agendaconsulta->vc_nota = addslashes($request->vc_nota);
+                $agendaconsulta->agenda_id = $agenda->id;
+                $agendaconsulta->it_termo = $request->it_termo;
+                $agendaconsulta->it_envDocs = $request->it_envDocs ? $request->it_envDocs : 0;
+                $agendaconsulta->vc_caminho_documento = $request->vc_doc;
+                $agendaconsulta->save();
+                return redirect()->route('cliente.consulta.index')->with('success', "Agenda criada.");
+            }
         } catch (\Exception $e) {
             // Em produção, use log ao invés de dd()
-            dd(['message' => $e->getMessage(), 'trace' => $e->getTrace()]);
+            //dd(['message' => $e->getMessage(), 'trace' => $e->getTrace()]);
             return back()->with('error', 'Erro ao criar agenda.');
         }
     }
@@ -156,11 +158,14 @@ class AppointmentController extends Controller
             0 => 'id',
             1 => 'data',
             2 => 'hora',
-            3 => 'activo'
+            3 => 'tipo',
+            4 => 'detalhes',
+            5 => 'activo'
         );
 
         $totalData = DB::table('agenda AS a')
-            ->select('a.id', 'a.activo AS status', 'a.data AS date')
+            ->leftJoin('agendamento_reuniaos AS ar', 'ar.agenda_id', '=', 'a.id')
+            ->leftJoin('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'a.id')
             ->where('a.cliente_id', $cliente->id)
             ->count();
         $totalRec = $totalData;
@@ -173,7 +178,20 @@ class AppointmentController extends Controller
         $search = $request->input('search.value');
 
         $terms = DB::table('agenda AS a')
-            ->select('a.id', 'a.activo AS status', 'a.data AS date', 'a.hora AS time')
+            ->leftJoin('agendamento_reuniaos AS ar', 'ar.agenda_id', '=', 'a.id')
+            ->leftJoin('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'a.id')
+            ->select(
+                'a.id',
+                'a.activo AS status',
+                'a.data AS date',
+                'a.hora AS time',
+                'ar.vc_entidade',
+                'ar.vc_motivo',
+                'ar.vc_pataforma as reuniao_plataforma',
+                'ac.vc_tipo',
+                'ac.vc_area',
+                'ac.vc_pataforma as consulta_plataforma'
+            )
             ->where('a.cliente_id', $cliente->id)
             ->when($request->input('appoint_date_from'), function ($query, $iterm) {
                 $iterm = LogActivity::commonDateFromat($iterm);
@@ -275,6 +293,17 @@ class AppointmentController extends Controller
                 $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
                 $nestedData['time'] = date('g:i a', strtotime($term->time));
 
+                // Determinar tipo e detalhes
+                if ($term->vc_entidade) {
+                    $nestedData['tipo'] = 'Reunião';
+                    $nestedData['detalhes'] = $term->vc_entidade . ' - ' . $term->vc_motivo;
+                } elseif ($term->vc_tipo) {
+                    $nestedData['tipo'] = 'Consulta';
+                    $nestedData['detalhes'] = $term->vc_tipo . ' - ' . $term->vc_area;
+                } else {
+                    $nestedData['tipo'] = 'Agenda';
+                    $nestedData['detalhes'] = '-';
+                }
 
                 $nestedData['action'] = $this->action([
                     'edit' => route('cliente.agenda.edit', encrypt($term->id)),

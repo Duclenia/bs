@@ -208,39 +208,19 @@ jQuery(document).ready(function () {
     // here, the index maps to the error code returned from getValidationError - see readme
     var errorMap = ["Invalid number", "Invalid country code", "Too short", "Too long", "Invalid number"];
 
-// initialise plugin
-//    var iti = window.intlTelInput(input, {
-//        utilsScript: utils
-//    });
-//
-//
-//// on blur: validate
-//    input.addEventListener('blur', function () {
-//
-//        if (input.value.trim()) {
-//            if (iti.isValidNumber()) {
-//                //validMsg.classList.remove("hide");
-//                //alert('correcto');
-//            } else {
-//                input.classList.add("error");
-//                var errorCode = iti.getValidationError();
-//                //alert(errorMap[errorCode]);
-//
-//            }
-//        }
-//    });
-
 
     var alternate_no = document.querySelector('#alternate_no');
-    intlTelInput(alternate_no, {
-        geoIpLookup: function (callback) {
-            $.get("https://ipinfo.io", function () {}, "jsonp").always(function (resp) {
-                var countryCode = (resp && resp.country) ? resp.country : "";
-                callback(countryCode);
-            });
-        },
-        utilsScript: utils
-    });
+    if (alternate_no) {
+        var itiAlternate = intlTelInput(alternate_no, {
+            initialCountry: "ao",
+            utilsScript: utils
+        });
+        
+        // Forçar a definição do país após inicialização
+        setTimeout(function() {
+            itiAlternate.setCountry("ao");
+        }, 100);
+    }
 
     //$('#alternate_no').mask("999 999 999");
 
@@ -249,10 +229,7 @@ jQuery(document).ready(function () {
         keepStatic: true
     });
 
-    $('#mobile00').inputmask({
-        mask: ['999999999'],
-        keepStatic: true
-    });
+    
     $('#ndi').inputmask({
         mask: ['aa999999', 'a999999', '9999a99', '999999999aa999', '9999999a99'],
         keepStatic: true
@@ -307,12 +284,13 @@ jQuery(document).ready(function () {
         }
     });
 
-    $('#tipo_cliente').on("change", function () {
-
+    // Garantir que o evento seja registrado após o DOM estar pronto
+    setTimeout(function() {
+        $('#tipo_cliente').off('change').on("change", function () {
+            console.log('Tipo cliente changed:', this.value);
+        
         if (this.value == '2') {
-
-            //$('.row_particular').css('display', 'block');
-
+            // Pessoa singular
             $('.f_name').show();
             $('#f_name').prop('required', true);
 
@@ -332,13 +310,13 @@ jQuery(document).ready(function () {
 
             $('.estado_civil').show();
 
+            $('.regime_casamento').hide();
+
             $('#lb_nif').html('Nº de Identificação Fiscal');
             $('#nif').prop('required', false);
 
         } else {
-
-            //$('.row_particular').hide();
-            
+            // Pessoa coletiva
             $('.f_name').hide();
             $('#f_name').prop('required', false).val('');
 
@@ -349,7 +327,7 @@ jQuery(document).ready(function () {
             $('#instituicao').prop('required', true);
 
             $('.estado_civil').hide();
-
+            $('.regime_casamento').hide();
 
             $('.documento').hide();
             $('#documento').prop('required', false).val('');
@@ -362,8 +340,13 @@ jQuery(document).ready(function () {
             $('#lb_nif').html('Nº de Identificação Fiscal <span class="text-danger">*</span>');
             $('#nif').prop('required', true);
         }
-
-    });
+        });
+        
+        // Trigger inicial se já houver valor selecionado
+        if ($('#tipo_cliente').val()) {
+            $('#tipo_cliente').trigger('change');
+        }
+    }, 100);
 
     $('#estado_civil').on('change', function () {
 

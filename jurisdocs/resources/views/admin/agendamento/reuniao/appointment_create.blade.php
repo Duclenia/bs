@@ -190,7 +190,7 @@
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <a href="politica.pdf" target="_blank" class="btn btn-link">Baixar documento</a>
+                    <a href="{{ asset('upload/documento.pdf') }}" download class="btn btn-link">Baixar documento</a>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
                 </div>
             </div>

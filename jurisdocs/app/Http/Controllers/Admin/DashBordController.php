@@ -25,10 +25,10 @@ class DashBordController extends Controller
      */
     public function __construct()
     {
-        
+
     }
-    
-    
+
+
     /**
      * Display a listing of the resource.
      *
@@ -57,7 +57,7 @@ class DashBordController extends Controller
 
     public function getcasesByIds($court, $judge_type, $date)
     {
-        
+
         // $advocate_id = $this->getLoginUserId();
 
         $checkTask = LogActivity::CheckuserType();
@@ -84,7 +84,7 @@ class DashBordController extends Controller
     }
 
     /**
-     * 
+     *
      * @param Request $request
      * @return type
      */
@@ -177,8 +177,8 @@ class DashBordController extends Controller
 //                    return $query;
 //                })
                 ->count();
-                
-                
+
+
         $data['total_tarefas'] = DB::table('tarefa AS t')
                 ->where('activo', 'S')
                 ->when($checkTask['type'] == "ADV" || $checkTask['type'] == "User", function ($query) use($checkTask) {
@@ -187,7 +187,7 @@ class DashBordController extends Controller
                     return $query;
                 })
                 ->count();
-                
+
         $data['total_tarefas_hoje'] = DB::table('tarefa AS t')
                 ->where('activo', 'S')
                 ->where('inicio', date('Y-m-d'))
@@ -197,7 +197,7 @@ class DashBordController extends Controller
                     return $query;
                 })
                 ->count();
-                
+
         $data['total_tarefas_futura'] = DB::table('tarefa AS t')
                 ->where('activo', 'S')
                 ->where('inicio','>', date('Y-m-d'))
@@ -207,39 +207,39 @@ class DashBordController extends Controller
                     return $query;
                 })
                 ->count();
-                
+
         $data['total_agenda'] = Agenda::where('activo', 'OPEN')->count();
-        
+
         $data['total_agenda_hoje'] = Agenda::where('activo', 'OPEN')
                                        ->where('data', date('Y-m-d'))
                                        ->count();
-        
+
         $data['total_agenda_futura'] = Agenda::where('activo', 'OPEN')
                                        ->where('data', '>',date('Y-m-d'))
                                        ->count();
-                
+
         $data['archived_total'] = Processo::where('activo', 'N')->count();
 
         $getAppointment = DB::table('agenda AS a')
                 ->leftJoin('cliente AS c', 'c.id', '=', 'a.cliente_id')
-                ->select('a.id AS id', 'a.activo AS status', 'a.data AS data', 'a.nome AS nome', 'a.nome AS appointment_name', 'c.nome AS first_name', 'c.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+                ->select('a.id AS id', 'a.activo AS status', 'a.data AS data', 'c.nome AS nome', 'a.nome AS appointment_name', 'c.nome AS first_name', 'c.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
                 ->where('a.activo', 'OPEN')
                 ->where('a.data', date('Y-m-d'))
                 ->get();
         $data['appoint_calander'] = $getAppointment;
-        
+
         $data['caseStatuses'] = EstadoProcesso::where('activo', 'S')
                                                 ->get();
-        
+
         $data['judges'] = Juiz::where('activo', 'S')->get();
-        
-        
+
+
         return view('admin.index', $data);
     }
 
     public function ajaxCalander(Request $request)
     {
-        
+
         $checkTask = LogActivity::CheckuserType();
 
         $CourtCase = DB::table('historico_processo AS hp')
@@ -306,7 +306,7 @@ class DashBordController extends Controller
 
         //filter by date
         $date = $date;
-        
+
         $data['date'] = $date;
         if (isset($date) && !empty($date)) {
             $date = date('Y-m-d', strtotime($date));
@@ -325,9 +325,9 @@ class DashBordController extends Controller
                         ->where('cl.bussiness_on_date', $date)
                         ->distinct()
                         ->get()->toArray();
-        
+
         $data['totalCaseCount'] = count($casesCount);
-        
+
         $totalData = DB::table('case_logs AS cl')
                 ->Join('juiz AS j', 'j.id', '=', 'cl.judge_type')
                 ->Join('processo AS case', 'case.id', '=', 'cl.court_case_id')
@@ -360,7 +360,7 @@ class DashBordController extends Controller
 
     public function printCaseBoard($date)
     {
-        
+
         //filter by date
         $date = $date;
         $data['date'] = $date;
@@ -497,7 +497,7 @@ class DashBordController extends Controller
 
         $totalData = DB::table('agenda AS a')
                 ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
-                ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'a.nome AS name', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+                ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'c.nome AS name', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
                 ->whereDate('data', '>=', $date)
                 ->whereDate('data', '<=', $date)
                 ->count();
@@ -512,7 +512,7 @@ class DashBordController extends Controller
         $search = $request->input('search.value');
         $terms = DB::table('agenda AS a')
                 ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
-                ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'a.nome AS name', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+                ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'ac.nome AS name','ac.instituicao', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
                 ->whereDate('data', '>=', $date)
                 ->whereDate('data', '<=', $date)
                 ->where(function ($query) use ($search) {
@@ -527,7 +527,7 @@ class DashBordController extends Controller
                 ->limit($limit)
                 ->orderBy($order, $dir)
                 ->get();
-                
+
         /*
           |--------------------------------------------
           | For table search filter from frontend site inside two table namely courses and courseterms.
@@ -552,7 +552,7 @@ class DashBordController extends Controller
                 $nestedData['time'] = date('g:i a', strtotime($term->app_time));
                 $nestedData['mobile'] = $term->mobile;
                 if ($term->type == "new") {
-                    $nestedData['name'] = $term->appointment_name;
+                    $nestedData['name'] =($term->instituicao)? $term->instituicao : $term->name . ' ' . $term->last_name;
                 } else {
                     $nestedData['name'] = $term->first_name . ' ' . $term->last_name;
                 }

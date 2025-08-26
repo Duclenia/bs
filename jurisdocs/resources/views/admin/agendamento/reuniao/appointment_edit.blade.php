@@ -138,9 +138,7 @@
                                             <option value="Zoom"
                                                 {{ old('vc_plataforma', $appointment->vc_pataforma ?? null) == 'Zoom' ? 'selected' : '' }}>
                                                 Zoom</option>
-                                            <option value="Teams"
-                                                {{ old('vc_plataforma', $appointment->vc_pataforma ?? null) == 'Teams' ? 'selected' : '' }}>
-                                                Teams</option>
+                                         
                                             <option value="Chamada Telefónica"
                                                 {{ old('vc_plataforma', $appointment->vc_pataforma ?? null) == 'Chamada Telefónica' ? 'selected' : '' }}>
                                                 Chamada Telefónica</option>

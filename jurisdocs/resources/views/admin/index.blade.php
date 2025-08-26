@@ -18,7 +18,7 @@
     <div class="clearfix"></div>
 
     <div class="row">
-        <a href="{{ route('clients.index') }}">
+         <a href="{{ route('clients.index') }}">
             <div class="animated flipInY col-lg-3 col-md-3 col-sm-6  ">
                 <div class="tile-stats">
                     <div class="icon"><i class="fa fa-users"></i>
@@ -221,6 +221,7 @@
                 </div>
                 <div class="x_content">
                     @if(count($appoint_calander)>0)
+
                     <table id="appointment_list" class="table row-border" style="width:100%">
                         <thead>
                             <tr>
@@ -446,7 +447,7 @@
 @push('js')
 <script src='https://fullcalendar.io/js/fullcalendar-3.1.0/lib/moment.min.js'></script>
 <script src="{{ asset('assets/admin/vendors/fullcalendar/dist/fullcalendar.min.js') }}"></script>
-<script src="{{ asset('assets/admin/vendors/fullcalendar/dist/lang/'.app()->getLocale().'.js') }}"></script>
+<script src="{{ asset('assets/admin/vendors/fullcalendar/dist/lang/pt.js') }}"></script>
 <script src="{{asset('assets/js/dashbord/dashbord-datatable.js')}}"></script>
 <script src="{{asset('assets/js/masked-input/masked-input.min.js')}}"></script>
 <script src="{{asset('assets/cliente/agenda.js')}}"></script>

@@ -25,9 +25,9 @@
                                 class="fa fa-chevron-down"></span></a>
                         <ul class="nav child_menu">
 
-                                <li><a href="{{ route('cliente.agenda.index') }}">{{ __('form reuniao') }}</a></li>
+                                <li><a href="{{ route('cliente.reuniao.index') }}">{{ __('form reuniao') }}</a></li>
 
-                                <li><a href="{{ route('cliente.consulta') }}">{{ __('form consulta') }}</a>
+                                <li><a href="{{ route('cliente.consulta.index') }}">{{ __('form consulta') }}</a>
 
 
                         </ul>

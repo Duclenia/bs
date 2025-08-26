@@ -70,7 +70,7 @@ class AppointmentReuniaoController extends Controller
 
         $agendaReuniao = new AgendamentoReuniao();
         if ($request->type == "new") {
-            $agendaReuniao->vc_entidade = ($request->instituicao) ? $request->instituicao : $request->nome . ' ' . $request->sobrenome;
+            $agendaReuniao->vc_entidade = ($request->instituicao) ? $request->instituicao : $request->f_name . ' ' . $request->l_name;
         } else {
 
             $cliente = $this->cliente->where('id', $request->exists_client)->first();
@@ -83,11 +83,23 @@ class AppointmentReuniaoController extends Controller
         $agendaReuniao->agenda_id = $a->id;
         $agendaReuniao->it_termo = $request->it_termo;
         $agendaReuniao->save();
-        return redirect()->route('reuniao.index')->with('success', "Agendamento de reuni達o criado.");
+        return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião criado.");
     }
 
 
-    public function show($id) {}
+    public function show($id)
+    {
+        $user = auth()->user();
+        if (!$user->can('appointment_view')) return back();
+
+        $data['appointment'] = Agenda::join('agendamento_reuniaos AS ar', 'ar.agenda_id', '=', 'agenda.id')
+            ->leftJoin('cliente AS cl', 'cl.id', '=', 'agenda.cliente_id')
+            ->where('agenda.id', decrypt($id))
+            ->select('agenda.*', 'ar.*', 'cl.nome as cliente_nome', 'cl.sobrenome as cliente_sobrenome', 'cl.instituicao as cliente_instituicao')
+            ->first();
+
+        return view('admin.agendamento.reuniao.appointment_show', $data);
+    }
 
     public function appointmentList(Request $request)
     {
@@ -152,7 +164,27 @@ class AppointmentReuniaoController extends Controller
             ->orderBy($order, $dir)
             ->get();
 
-        $totalFiltered = $terms->count();
+        $totalFiltered = DB::table('agenda AS a')
+            ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
+            ->Join('agendamento_reuniaos as ac', 'ac.agenda_id', '=', 'a.id')
+            ->when($request->input('appoint_date_from'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->when($request->input('appoint_date_to'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '<=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->where(function ($query) use ($search) {
+                return $query->where('a.telefone', 'LIKE', "%{$search}%")
+                    ->orWhere('a.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.sobrenome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.instituicao', 'LIKE', "%{$search}%")
+                    ->orWhere('ac.vc_entidade', 'LIKE', "%{$search}%")
+                    ->orWhere('a.activo', 'LIKE', "%{$search}%");
+            })
+            ->count();
 
         $data = array();
         if (!empty($terms)) {
@@ -225,13 +257,16 @@ class AppointmentReuniaoController extends Controller
 
                 if ($isEdit == "1") {
                     $nestedData['action'] = $this->action([
+                        'view' => route('reuniao.show', encrypt($term->id)),
                         'edit' => route('reuniao.edit', encrypt($term->id)),
                         'edit_permission' => $isEdit,
                     ]);
                 } else {
-                    $nestedData['action'] = [];
+                    $nestedData['action'] = $this->action([
+                        'view' => route('reuniao.show', encrypt($term->id)),
+                    ]);
                 }
- \Log::debug("DATA".json_encode($nestedData['id']));
+
                 $data[] = $nestedData;
             }
         }

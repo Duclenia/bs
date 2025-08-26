@@ -400,7 +400,7 @@
 <script src="{{asset('assets/plugins/intl-tel-input/js/utils.js')}}"></script>
 
 
-<script src="{{asset('assets/js/cliente/add-client-validation.js')}}"></script>
+<script src="{{asset('assets/js/cliente/add-client-validation_single.js')}}"></script>
 
 <script src="{{asset('assets/plugins/input-mask/jquery.inputmask.bundle.js')}}"></script>
 <script src="{{asset('assets/plugins/input-mask/jquery.inputmask.js')}}"></script>

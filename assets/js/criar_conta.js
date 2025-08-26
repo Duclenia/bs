@@ -152,6 +152,10 @@ jQuery(document).ready(function () {
         mask: ['999999999', '999 999 999'],
         keepStatic: true
     });
+       $("#mobile_alternativo").inputmask({
+        mask: ['999999999', '999 999 999'],
+        keepStatic: true
+    });
     
     $('#nif').inputmask({
         mask: ['9999999999', '999999999aa999'],

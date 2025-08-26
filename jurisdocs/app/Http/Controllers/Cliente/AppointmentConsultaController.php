@@ -25,10 +25,9 @@ class AppointmentConsultaController extends Controller
     private $cliente;
     private $clienteAgenda;
 
-    public function __construct(Cliente $cliente, ClienteController $client)
+    public function __construct(Cliente $cliente)
     {
         $this->cliente = $cliente;
-        $this->clienteAgenda = $client;
     }
 
     /**
@@ -38,11 +37,12 @@ class AppointmentConsultaController extends Controller
      */
     public function index()
     {
-        if (Gate::denies('appointment_list'))
+        $cliente = auth()->user()->cliente;
+
+        if ($cliente->activo == 'S')
+            return view('cliente.appointment.consulta.appointment');
+        else
             return back();
-
-
-        return view('admin.agendamento.consulta.appointment');
     }
 
 
@@ -55,16 +55,12 @@ class AppointmentConsultaController extends Controller
      */
     public function create()
     {
-        if (Gate::denies('appointment_add'))
+         $cliente = auth()->user()->cliente;
+
+        if ($cliente->activo == 'S')
+            return view('cliente.appointment.consulta.appointment_create');
+        else
             return back();
-
-        $data['client_list'] = $this->cliente->where('activo', 'S')->get();
-        $data['country'] = Pais::all();
-        $data['state'] = Provincia::all();
-        $data['tipospessoas'] = TipoPessoa::all();
-        $data['tiposdocumentos'] = TipoDocumento::all();
-
-        return view('admin.agendamento.consulta.appointment_create', $data);
     }
 
 
@@ -101,13 +97,29 @@ class AppointmentConsultaController extends Controller
         return redirect()->route('consulta.index')->with('success', "Agendamento de consulta criado.");
     }
 
-    public function show($id) {}
+    public function show($id)
+    {
+        $user = auth()->user();
+        $cliente = $user->cliente;
+
+        $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
+            ->where('agenda.id', decrypt($id))
+            ->where('agenda.cliente_id', $cliente->id)
+            ->select('agenda.*', 'ac.*')
+            ->first();
+
+        if (!$data['appointment']) {
+            return back()->with('error', 'Consulta não encontrada.');
+        }
+
+        return view('cliente.appointment.consulta.appointment_show', $data);
+    }
 
     public function appointmentList(Request $request)
     {
 
         $user = auth()->user();
-        $isEdit = $user->can('appointment_edit');
+        $cliente = $user->cliente;
 
         /*
           |----------------
@@ -128,6 +140,7 @@ class AppointmentConsultaController extends Controller
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_consultas as ac', 'ac.agenda_id', '=', 'a.id')
             ->select('ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type')
+            ->where('a.cliente_id', $cliente->id)
             ->count();
         $totalRec = $totalData;
 
@@ -141,7 +154,8 @@ class AppointmentConsultaController extends Controller
         $terms = DB::table('agenda AS a')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_consultas as ac', 'ac.agenda_id', '=', 'a.id')
-            ->select('ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
+            ->select('ac.vc_tipo as vc_tipo', 'ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
+            ->where('a.cliente_id', $cliente->id)
             ->when($request->input('appoint_date_from'), function ($query, $iterm) {
                 $iterm = LogActivity::commonDateFromat($iterm);
                 return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
@@ -176,7 +190,32 @@ class AppointmentConsultaController extends Controller
           |----------------------------------------------------------------------------------------------------------------------------------
          */
 
-        $totalFiltered = $terms->count();
+        $totalFiltered = DB::table('agenda AS a')
+            ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
+            ->Join('agendamento_consultas as ac', 'ac.agenda_id', '=', 'a.id')
+            ->select('ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
+           ->where('a.cliente_id', $cliente->id)
+            ->when($request->input('appoint_date_from'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->when($request->input('appoint_date_to'), function ($query, $iterm) {
+                $iterm = LogActivity::commonDateFromat($iterm);
+                return $query->whereDate('a.data', '<=', date('Y-m-d', strtotime($iterm)));
+            })
+            ->where(function ($query) use ($search) {
+                return $query->where('a.telefone', 'LIKE', "%{$search}%")
+                    ->orWhere('a.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.sobrenome', 'LIKE', "%{$search}%")
+                    ->orWhere('cl.instituicao', 'LIKE', "%{$search}%")
+                    ->orWhere('ac.vc_area', 'LIKE', "%{$search}%")
+                    ->orWhere('a.activo', 'LIKE', "%{$search}%");
+            })
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->count();
 
         $data = array();
         if (!empty($terms)) {
@@ -202,66 +241,39 @@ class AppointmentConsultaController extends Controller
                 /**
                  * -/End
                  */
-                $con = '<select name="status" class="appointment-select2" id="status" onchange="change_status(' . "'" . $term->id . "'" . ',' . 'getval(this)' . ',' . "'" . 'agenda' . "'" . ')">';
-
-                //for open status
-                $con .= "<option value='OPEN'";
+                // Cliente só pode ver o estado, não alterar
                 if ($term->status == 'OPEN') {
-                    $con .= "selected";
-                }
-                $con .= ">Aberto</option>";
-
-                //for CANCEL BY CLIENT status
-
-                $con .= "<option value='CANCEL BY CLIENT'";
-                if ($term->status == 'CANCEL BY CLIENT') {
-                    $con .= "selected";
-                }
-                $con .= ">Cancelado pelo cliente</option>";
-
-
-                //for CANCEL BY ADVOCATE status
-                $con .= "<option value='CANCEL BY ADVOCATE'";
-                if ($term->status == 'CANCEL BY ADVOCATE') {
-                    $con .= "selected";
-                }
-                $con .= ">Cancelado pelo advogado(a)</option>";
-
-
-                $con .= "</select>";
-
-
-                if ($isEdit == "1") {
-                    $nestedData['is_active'] = $con;
+                    $statusText = 'Aberto';
+                } elseif ($term->status == 'CANCEL BY CLIENT') {
+                    $statusText = 'Cancelado pelo cliente';
+                } elseif ($term->status == 'CANCEL BY ADVOCATE') {
+                    $statusText = 'Cancelado pelo advogado';
                 } else {
-                    $nestedData['is_active'] = "";
+                    $statusText = $term->status;
                 }
 
-                if (empty($request->input('search.value'))) {
+                $nestedData['is_active'] = $statusText;
+
+                /*  if (empty($request->input('search.value'))) {
                     $final = $totalRec - $start;
                     $nestedData['id'] = $final;
                     $totalRec--;
                 } else {
                     $start++;
                     $nestedData['id'] = $start;
-                }
+                } */
+                $nestedData['id'] = $term->id;
                 $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
                 $nestedData['time'] = date('g:i a', strtotime($term->time));
 
 
                 $nestedData['mobile'] = htmlspecialchars($term->mobile);
                 $nestedData['vc_area'] = htmlspecialchars($term->vc_area);
-                $clientName = ($term->tipo_cliente == 2) ? $term->nome_cliente . ' ' . $term->sobrenome_cliente : $term->instituicao;
-                $nestedData['name'] = htmlspecialchars($clientName);
+                $nestedData['name'] = htmlspecialchars($term->vc_tipo);
 
-                if ($isEdit == "1") {
-                    $nestedData['action'] = $this->action([
-                        'edit' => route('consulta.edit', encrypt($term->id)),
-                        'edit_permission' => $isEdit,
-                    ]);
-                } else {
-                    $nestedData['action'] = [];
-                }
+                 $nestedData['action'] = $this->action([
+                    'view' => route('cliente.consulta.show', encrypt($term->id)),
+                ]);
 
                 $data[] = $nestedData;
             }
@@ -289,9 +301,9 @@ class AppointmentConsultaController extends Controller
         if (!$user->can('appointment_edit'))
             return back();
 
-       $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
+        $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
             ->where('agenda.id', decrypt($id))
-            ->select('agenda.*','ac.vc_area as vc_area', 'ac.vc_tipo', 'ac.vc_pataforma', 'ac.link_reuniao', 'ac.vc_nota', 'ac.it_termo', 'ac.it_envDocs', 'ac.vc_caminho_documento')
+            ->select('agenda.*', 'ac.vc_area as vc_area', 'ac.vc_tipo', 'ac.vc_pataforma', 'ac.link_reuniao', 'ac.vc_nota', 'ac.it_termo', 'ac.it_envDocs', 'ac.vc_caminho_documento')
             ->first();
         $data['client_list'] = $this->cliente->where('id',  $data['appointment']->cliente_id)->get();
 
@@ -324,12 +336,12 @@ class AppointmentConsultaController extends Controller
             'link_reuniao' => $request->vc_link_acesso,
             'vc_nota' => addslashes($request->vc_nota),
             'it_termo' => $request->it_termo,
-             'it_envDocs' => $request->it_envDocs,
+            'it_envDocs' => $request->it_envDocs,
             'vc_caminho_documento' => $request->vc_doc
         ]);
 
         return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião atualizado.");
-     }
+    }
 
     /**
      * Remove the specified resource from storage.

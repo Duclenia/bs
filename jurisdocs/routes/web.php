@@ -87,10 +87,18 @@ Route::group(['prefix' => 'cliente', 'as' => 'cliente.'], function () {
     Route::group(['namespace' => 'Cliente', 'middleware' => ['auth', 'locale']], function () {
 
         //------------------Agenda----------------------------//
-        Route::resource('agenda', 'AppointmentController');
-        Route::get('consulta', 'AppointmentController@consulta')->name('consulta');
+
+        Route::resource('consulta', 'AppointmentConsultaController');
         Route::get('consulta_create', 'AppointmentController@create_consulta')->name('consulta_create');
         Route::post('appointment/data-list', 'AppointmentController@appointmentList')->name('appointment.list');
+        Route::resource('reuniao', 'AppointmentReuniaoController');
+         Route::resource('agenda', 'AppointmentController');
+
+        Route::post('appointment/reuniao/data-list', 'AppointmentReuniaoController@appointmentList')->name('appointmentReuniao.list');
+        Route::resource('consulta', 'AppointmentConsultaController');
+        Route::post('appointment/consulta/data-list', 'AppointmentConsultaController@appointmentList')->name('appointmentConsulta.list');
+        Route::post('appointment/consulta/data-list', 'AppointmentConsultaController@appointmentList')->name('appointmentConsulta.list');
+
         Route::post('getMobileno', 'AppointmentController@getMobileno')->name('getMobileno');
     });
 });
@@ -161,10 +169,12 @@ Route::group(['prefix' => 'admin', 'namespace' => 'Admin', 'middleware' => ['aut
 
     //------------------Agenda Reuniao----------------------------//
     Route::resource('reuniao', 'AppointmentReuniaoController');
+    Route::get('reuniao/{id}/show', 'AppointmentReuniaoController@show')->name('reuniao.show');
     Route::post('appointment/reuniao/data-list', 'AppointmentReuniaoController@appointmentList')->name('appointmentReuniao.list');
     Route::post('getMobileno/reuniao', 'AppointmentReuniaoController@getMobileno')->name('getMobileno');
- //------------------Agenda consulta----------------------------//
+    //------------------Agenda consulta----------------------------//
     Route::resource('consulta', 'AppointmentConsultaController');
+    Route::get('consulta/{id}/show', 'AppointmentConsultaController@show')->name('consulta.show');
     Route::post('appointment/consulta/data-list', 'AppointmentConsultaController@appointmentList')->name('appointmentConsulta.list');
     Route::post('getMobileno/consulta', 'AppointmentConsultaController@getMobileno')->name('getMobileno');
 

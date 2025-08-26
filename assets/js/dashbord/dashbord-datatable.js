@@ -96,12 +96,19 @@ var DatatableRemoteAjaxDemo = function () {
                 },
                 // put your options and callbacks here
                 timezone: 'local',
-                locale: language,
+                locale: 'pt',
                 left: 'Calendar',
                 header: {
                     left: 'prev,next today',
                     center: 'title',
                     right: 'month,agendaWeek,agendaDay,listMonth'
+                },
+                buttonText: {
+                    today: 'Hoje',
+                    month: 'Mês',
+                    week: 'Semana',
+                    day: 'Dia',
+                    list: 'Lista'
                 },
                 eventClick: function (calEvent, jsEvent, view) {
                     var id = calEvent.id;
