@@ -4,6 +4,7 @@
 
 <link href="{{ asset('assets/admin/vendors/fullcalendar/dist/fullcalendar.min.css') }} " rel="stylesheet">
 
+
 @can('dashboard_list')
 
 <form method="POST" action="{{url('admin/dashboard')}}" id="case_board_form">
@@ -350,6 +351,8 @@
        value="{{$date_format_datepiker}}">
 <input type="hidden" name="dashboard_appointment_list"
        id="dashboard_appointment_list" value="{{ url('admin/dashboard-appointment-list') }}">
+<input type="hidden" name="get-day-appointments"
+       id="get-day-appointments" value="{{ url('admin/get-day-appointments') }}">
 
 <input type="hidden" name="getNextDateModal"
        id="getNextDateModal"

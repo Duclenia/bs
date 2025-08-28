@@ -255,7 +255,7 @@ class AppointmentController extends Controller
                 if ($term->status == 'CANCEL BY ADVOCATE') {
                     $con .= "selected";
                 }
-                $con .= ">Cancelado pelo advogado(a)</option>";
+               // $con .= ">Cancelado pelo advogado(a)</option>";
 
 
                 $con .= "</select>";

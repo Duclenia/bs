@@ -26,7 +26,7 @@
             'csrfToken' => csrf_token(),
         ])
     </script>
-   
+
     <!-- Font Awesome -->
     <link href="{{ asset('assets/admin/vendors/font-awesome/css/font-awesome.min.css') }}" rel="stylesheet">
     <!-- NProgress -->

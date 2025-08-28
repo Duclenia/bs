@@ -257,8 +257,8 @@ class AppointmentConsultaController extends Controller
 
 
                 //for CANCEL BY ADVOCATE status
-                $con .= "<option value='CANCEL BY ADVOCATE'";
-                if ($term->status == 'CANCEL BY ADVOCATE') {
+                $con .= "<option value='CANCEL BY ADVOCA'";
+                if ($term->status == 'CANCEL BY ADVOCA') {
                     $con .= "selected";
                 }
                 $con .= ">Cancelado pelo advogado(a)</option>";

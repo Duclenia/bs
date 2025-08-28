@@ -23,10 +23,7 @@ class DashBordController extends Controller
      *
      * @return void
      */
-    public function __construct()
-    {
-
-    }
+    public function __construct() {}
 
 
     /**
@@ -38,20 +35,32 @@ class DashBordController extends Controller
     {
         // $advocate_id = $this->getLoginUserId();
         $totalData = DB::table('processo AS p')
-                        ->leftJoin('cliente AS c', 'c.id', '=', 'p.cliente_id')
-                        ->leftJoin('tipoprocesso AS tp', 'tp.id', '=', 'p.tipoprocesso_id')
-                        ->leftJoin('estadoprocesso AS ep', 'ep.id', '=', 'p.estado')
-                        ->leftJoin('tribunal AS t', 't.id', '=', 'p.tribunal_id')
-                        ->leftJoin('juiz AS j', 'j.id', '=', 'p.juiz_id')
-                        ->select('p.id AS case_id', 'p.client_position', 'p.party_name', 'p.party_lawyer', 'p.no_processo', 'tp.designacao AS caseType', 'ep.estado', 't.nome', 'j.nome', 'c.nome', 'c.sobrenome', 'c.instituicao'
-                        )
-                        // ->where('case.advocate_id',$advocate_id)
-                        ->where('p.activo', 'S')
-                        ->where('p.tribunal_id', $court)
-                        //->whereDate('case.next_date', '>=',$startDate)
-                        // ->whereDate('case.next_date', '<=', $endDate)
-                        ->orderBy('p.id', 'desc')
-                        ->get()->groupBy('court')->toArray();
+            ->leftJoin('cliente AS c', 'c.id', '=', 'p.cliente_id')
+            ->leftJoin('tipoprocesso AS tp', 'tp.id', '=', 'p.tipoprocesso_id')
+            ->leftJoin('estadoprocesso AS ep', 'ep.id', '=', 'p.estado')
+            ->leftJoin('tribunal AS t', 't.id', '=', 'p.tribunal_id')
+            ->leftJoin('juiz AS j', 'j.id', '=', 'p.juiz_id')
+            ->select(
+                'p.id AS case_id',
+                'p.client_position',
+                'p.party_name',
+                'p.party_lawyer',
+                'p.no_processo',
+                'tp.designacao AS caseType',
+                'ep.estado',
+                't.nome',
+                'j.nome',
+                'c.nome',
+                'c.sobrenome',
+                'c.instituicao'
+            )
+            // ->where('case.advocate_id',$advocate_id)
+            ->where('p.activo', 'S')
+            ->where('p.tribunal_id', $court)
+            //->whereDate('case.next_date', '>=',$startDate)
+            // ->whereDate('case.next_date', '<=', $endDate)
+            ->orderBy('p.id', 'desc')
+            ->get()->groupBy('court')->toArray();
         return array_shift($totalData);
     }
 
@@ -63,23 +72,33 @@ class DashBordController extends Controller
         $checkTask = LogActivity::CheckuserType();
 
         $totalData = DB::table('processo AS p')
-                        ->leftJoin('historico_processo AS hp', 'hp.processo_id', '=', 'p.id')
-                        ->leftJoin('cliente AS c', 'c.id', '=', 'p.cliente_id')
-                        ->leftJoin('tipoprocesso AS tp', 'tp.id', '=', 'p.tipoprocesso_id')
-                        ->leftJoin('estadoprocesso AS ep', 'ep.id', '=', 'p.estado')
-                        ->select('p.id AS case_id', 'hp.bussiness_on_date', 'hp.hearing_date', 'p.client_position', 'p.party_name', 'p.party_lawyer', 'ep.estado', 'c.nome', 'c.sobrenome', 'c.instituicao'
-                        )
-                        // ->where('case.advocate_id',$advocate_id)
-                        ->where('p.activo', 'S')
-                        ->where('hp.bussiness_on_date', $date)
-                        ->where('p.juiz_id', $judge_type)
-                        ->when($checkTask['type'] == "ADV", function ($query) use($checkTask) {
-                            $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
-                            $query->where('pm.membro', $checkTask['id']);
-                            return $query;
-                        })
-                        ->distinct()
-                        ->get()->toArray();
+            ->leftJoin('historico_processo AS hp', 'hp.processo_id', '=', 'p.id')
+            ->leftJoin('cliente AS c', 'c.id', '=', 'p.cliente_id')
+            ->leftJoin('tipoprocesso AS tp', 'tp.id', '=', 'p.tipoprocesso_id')
+            ->leftJoin('estadoprocesso AS ep', 'ep.id', '=', 'p.estado')
+            ->select(
+                'p.id AS case_id',
+                'hp.bussiness_on_date',
+                'hp.hearing_date',
+                'p.client_position',
+                'p.party_name',
+                'p.party_lawyer',
+                'ep.estado',
+                'c.nome',
+                'c.sobrenome',
+                'c.instituicao'
+            )
+            // ->where('case.advocate_id',$advocate_id)
+            ->where('p.activo', 'S')
+            ->where('hp.bussiness_on_date', $date)
+            ->where('p.juiz_id', $judge_type)
+            ->when($checkTask['type'] == "ADV", function ($query) use ($checkTask) {
+                $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
+                $query->where('pm.membro', $checkTask['id']);
+                return $query;
+            })
+            ->distinct()
+            ->get()->toArray();
         return $totalData;
     }
 
@@ -106,52 +125,62 @@ class DashBordController extends Controller
         //get login user id
         // dd(  $advocate_id);
         $casesCount = DB::table('processo AS p')
-                        ->leftJoin('historico_processo AS hp', 'hp.processo_id', '=', 'p.id')
-                        ->leftJoin('cliente AS c', 'c.id', '=', 'p.cliente_id')
-                        ->leftJoin('tipoprocesso AS tp', 'tp.id', '=', 'p.tipoprocesso_id')
-                        ->leftJoin('estadoprocesso AS ep', 'ep.id', '=', 'p.estado')
-                        ->select('p.id AS case_id', 'hp.bussiness_on_date', 'hp.hearing_date', 'p.client_position', 'p.party_name', 'p.party_lawyer', 'tp.designacao AS caseType', 'ep.estado', 'c.nome', 'c.sobrenome', 'c.instituicao'
-                        )
-                        // ->where('case.advocate_id',$advocate_id)
-                        ->where('p.activo', 'S')
-                        ->where('hp.bussiness_on_date', $date)
-//                        ->when($checkTask['type'] == "ADV", function ($query) use($checkTask) {
-//                            $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
-//                            $query->where('pm.membro', $checkTask['id']);
-//                            return $query;
-//                        })
-                        ->distinct()
-                        ->get()->toArray();
+            ->leftJoin('historico_processo AS hp', 'hp.processo_id', '=', 'p.id')
+            ->leftJoin('cliente AS c', 'c.id', '=', 'p.cliente_id')
+            ->leftJoin('tipoprocesso AS tp', 'tp.id', '=', 'p.tipoprocesso_id')
+            ->leftJoin('estadoprocesso AS ep', 'ep.id', '=', 'p.estado')
+            ->select(
+                'p.id AS case_id',
+                'hp.bussiness_on_date',
+                'hp.hearing_date',
+                'p.client_position',
+                'p.party_name',
+                'p.party_lawyer',
+                'tp.designacao AS caseType',
+                'ep.estado',
+                'c.nome',
+                'c.sobrenome',
+                'c.instituicao'
+            )
+            // ->where('case.advocate_id',$advocate_id)
+            ->where('p.activo', 'S')
+            ->where('hp.bussiness_on_date', $date)
+            //                        ->when($checkTask['type'] == "ADV", function ($query) use($checkTask) {
+            //                            $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
+            //                            $query->where('pm.membro', $checkTask['id']);
+            //                            return $query;
+            //                        })
+            ->distinct()
+            ->get()->toArray();
 
         $data['totalCaseCount'] = count($casesCount);
 
         $totalData = DB::table('historico_processo AS hp')
-                ->Join('processo AS p', 'p.id', '=', 'hp.processo_id')
-                ->Join('juiz AS j', 'p.juiz_id', '=', 'j.id')
-                ->select('j.*')
-                ->whereDate('hp.bussiness_on_date', '>=', $date)
-                ->whereDate('hp.bussiness_on_date', '<=', $date)
-                ->when($checkTask['type'] == "ADV", function ($query) use($checkTask) {
-                    $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
-                    $query->where('pm.membro', $checkTask['id']);
-                    return $query;
-                })
-                ->distinct()
-                ->get();
+            ->Join('processo AS p', 'p.id', '=', 'hp.processo_id')
+            ->Join('juiz AS j', 'p.juiz_id', '=', 'j.id')
+            ->select('j.*')
+            ->whereDate('hp.bussiness_on_date', '>=', $date)
+            ->whereDate('hp.bussiness_on_date', '<=', $date)
+            ->when($checkTask['type'] == "ADV", function ($query) use ($checkTask) {
+                $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
+                $query->where('pm.membro', $checkTask['id']);
+                return $query;
+            })
+            ->distinct()
+            ->get();
 
         $res = array();
-        if (count($totalData) > 0 && !empty($totalData))
-         {
+        if (count($totalData) > 0 && !empty($totalData)) {
             $arrCourt = $totalData;
 
             foreach ($arrCourt as $key => $case_detail) {
 
                 //$date = '2018-10-20';
                 $court_case_ids = DB::table('case_logs AS cl')
-                        ->where('judge_type', $case_detail->id)
-                        ->where('bussiness_on_date', $date)
-                        ->pluck('processo_id')
-                        ->toArray();
+                    ->where('judge_type', $case_detail->id)
+                    ->where('bussiness_on_date', $date)
+                    ->pluck('processo_id')
+                    ->toArray();
 
                 if (!empty($this->getcasesByIds($court_case_ids, $case_detail->id, $date))) {
                     $res[$key]['judge_name'] = $case_detail->nome;
@@ -165,71 +194,71 @@ class DashBordController extends Controller
         //user and its case counts
         $data['client'] = Cliente::count();
         $data['appointmentCount'] = Agenda::count();
-//        $data['important_case'] = Processo::where('prioridade', 'Alta')
-//                ->where('activo', 'S')
-//                ->count();
+        //        $data['important_case'] = Processo::where('prioridade', 'Alta')
+        //                ->where('activo', 'S')
+        //                ->count();
 
         $data['case_total'] = DB::table('processo AS p')
-                ->where('activo', 'S')
-//                ->when($checkTask['type'] == "ADV", function ($query) use($checkTask) {
-//                    $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
-//                    $query->where('pm.membro', $checkTask['id']);
-//                    return $query;
-//                })
-                ->count();
+            ->where('activo', 'S')
+            //                ->when($checkTask['type'] == "ADV", function ($query) use($checkTask) {
+            //                    $query->leftJoin('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
+            //                    $query->where('pm.membro', $checkTask['id']);
+            //                    return $query;
+            //                })
+            ->count();
 
 
         $data['total_tarefas'] = DB::table('tarefa AS t')
-                ->where('activo', 'S')
-                ->when($checkTask['type'] == "ADV" || $checkTask['type'] == "User", function ($query) use($checkTask) {
-                    $query->leftJoin('tarefa_membro AS tm', 'tm.tarefa_id', '=', 't.id');
-                    $query->where('tm.membro_id', $checkTask['id']);
-                    return $query;
-                })
-                ->count();
+            ->where('activo', 'S')
+            ->when($checkTask['type'] == "ADV" || $checkTask['type'] == "User", function ($query) use ($checkTask) {
+                $query->leftJoin('tarefa_membro AS tm', 'tm.tarefa_id', '=', 't.id');
+                $query->where('tm.membro_id', $checkTask['id']);
+                return $query;
+            })
+            ->count();
 
         $data['total_tarefas_hoje'] = DB::table('tarefa AS t')
-                ->where('activo', 'S')
-                ->where('inicio', date('Y-m-d'))
-                ->when($checkTask['type'] == "ADV" || $checkTask['type'] == "User", function ($query) use($checkTask) {
-                    $query->leftJoin('tarefa_membro AS tm', 'tm.tarefa_id', '=', 't.id');
-                    $query->where('tm.membro_id', $checkTask['id']);
-                    return $query;
-                })
-                ->count();
+            ->where('activo', 'S')
+            ->where('inicio', date('Y-m-d'))
+            ->when($checkTask['type'] == "ADV" || $checkTask['type'] == "User", function ($query) use ($checkTask) {
+                $query->leftJoin('tarefa_membro AS tm', 'tm.tarefa_id', '=', 't.id');
+                $query->where('tm.membro_id', $checkTask['id']);
+                return $query;
+            })
+            ->count();
 
         $data['total_tarefas_futura'] = DB::table('tarefa AS t')
-                ->where('activo', 'S')
-                ->where('inicio','>', date('Y-m-d'))
-                ->when($checkTask['type'] == "ADV" || $checkTask['type'] == "User", function ($query) use($checkTask) {
-                    $query->leftJoin('tarefa_membro AS tm', 'tm.tarefa_id', '=', 't.id');
-                    $query->where('tm.membro_id', $checkTask['id']);
-                    return $query;
-                })
-                ->count();
+            ->where('activo', 'S')
+            ->where('inicio', '>', date('Y-m-d'))
+            ->when($checkTask['type'] == "ADV" || $checkTask['type'] == "User", function ($query) use ($checkTask) {
+                $query->leftJoin('tarefa_membro AS tm', 'tm.tarefa_id', '=', 't.id');
+                $query->where('tm.membro_id', $checkTask['id']);
+                return $query;
+            })
+            ->count();
 
         $data['total_agenda'] = Agenda::where('activo', 'OPEN')->count();
 
         $data['total_agenda_hoje'] = Agenda::where('activo', 'OPEN')
-                                       ->where('data', date('Y-m-d'))
-                                       ->count();
+            ->where('data', date('Y-m-d'))
+            ->count();
 
         $data['total_agenda_futura'] = Agenda::where('activo', 'OPEN')
-                                       ->where('data', '>',date('Y-m-d'))
-                                       ->count();
+            ->where('data', '>', date('Y-m-d'))
+            ->count();
 
         $data['archived_total'] = Processo::where('activo', 'N')->count();
 
         $getAppointment = DB::table('agenda AS a')
-                ->leftJoin('cliente AS c', 'c.id', '=', 'a.cliente_id')
-                ->select('a.id AS id', 'a.activo AS status', 'a.data AS data', 'c.nome AS nome', 'a.nome AS appointment_name', 'c.nome AS first_name', 'c.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
-                ->where('a.activo', 'OPEN')
-                ->where('a.data', date('Y-m-d'))
-                ->get();
+            ->leftJoin('cliente AS c', 'c.id', '=', 'a.cliente_id')
+            ->select('a.id AS id', 'a.activo AS status', 'a.data AS data', 'c.nome AS nome', 'a.nome AS appointment_name', 'c.nome AS first_name', 'c.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+            ->where('a.activo', 'OPEN')
+            ->where('a.data', date('Y-m-d'))
+            ->get();
         $data['appoint_calander'] = $getAppointment;
 
         $data['caseStatuses'] = EstadoProcesso::where('activo', 'S')
-                                                ->get();
+            ->get();
 
         $data['judges'] = Juiz::where('activo', 'S')->get();
 
@@ -243,21 +272,20 @@ class DashBordController extends Controller
         $checkTask = LogActivity::CheckuserType();
 
         $CourtCase = DB::table('historico_processo AS hp')
-                ->join('processo AS p', 'hp.processo_id', '=', 'p.id')
-                ->select('p.id as id', 'hp.bussiness_on_date as start')
-                ->when($checkTask['type'] == "ADV", function ($query) use($checkTask) {
-                    $query->Join('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
-                    $query->where('pm.membro', $checkTask['id']);
-                    return $query;
-                })
-                ->whereMonth('hp.bussiness_on_date', $request->start)
-                ->whereYear('hp.bussiness_on_date', $request->end)
-                ->orWhereYear('hp.bussiness_on_date', $request->start)
-                ->orWhereYear('hp.bussiness_on_date', $request->end)
-                ->get();
+            ->join('processo AS p', 'hp.processo_id', '=', 'p.id')
+            ->select('p.id as id', 'hp.bussiness_on_date as start')
+            ->when($checkTask['type'] == "ADV", function ($query) use ($checkTask) {
+                $query->Join('processo_membro AS pm', 'pm.processo_id', '=', 'p.id');
+                $query->where('pm.membro', $checkTask['id']);
+                return $query;
+            })
+            ->whereMonth('hp.bussiness_on_date', $request->start)
+            ->whereYear('hp.bussiness_on_date', $request->end)
+            ->orWhereYear('hp.bussiness_on_date', $request->start)
+            ->orWhereYear('hp.bussiness_on_date', $request->end)
+            ->get();
 
-        if (!empty($CourtCase))
-        {
+        if (!empty($CourtCase)) {
             foreach ($CourtCase as $value1) {
                 $value1->color = '#27c24c';
                 $value1->refer = "case";
@@ -267,15 +295,14 @@ class DashBordController extends Controller
         // dd($CourtCase);
         //calander
         $appointment = Agenda::select('cliente_id', 'type', 'id', 'nome AS title', 'created_at as color', DB::raw('DATE_FORMAT(data, "%d-%m-%Y") as start'))
-                ->where('activo', 'OPEN')
-                ->whereMonth('data', $request->start)
-                ->whereYear('data', $request->end)
-                ->orWhereYear('data', $request->start)
-                ->orWhereYear('data', $request->end)
-                ->get();
+            ->where('activo', 'OPEN')
+            ->whereMonth('data', $request->start)
+            ->whereYear('data', $request->end)
+            ->orWhereYear('data', $request->start)
+            ->orWhereYear('data', $request->end)
+            ->get();
 
-        if (!empty($appointment))
-        {
+        if (!empty($appointment)) {
 
             foreach ($appointment as $value) {
                 if ($value->type == "exists") {
@@ -315,28 +342,39 @@ class DashBordController extends Controller
         //get login user id
         $data['associatedName'] = Admin::select('associated_name')->first();
         $casesCount = DB::table('processo AS case')
-                        ->leftJoin('case_logs AS cl', 'cl.court_case_id', '=', 'case.id')
-                        ->leftJoin('cliente AS ac', 'ac.id', '=', 'case.cliente_id')
-                        ->leftJoin('tipoprocesso AS ct', 'ct.id', '=', 'case.case_types')
-                        ->leftJoin('estadoprocesso AS s', 's.id', '=', 'case.case_status')
-                        ->select('case.id AS case_id', 'cl.bussiness_on_date', 'cl.hearing_date', 'case.client_position', 'case.party_name', 'case.party_lawyer', 'ct.case_type_name AS caseType', 's.case_status_name', 'ac.nome', 'ac.sobrenome', 'ac.instituicao'
-                        )
-                        ->where('case.activo', 'S')
-                        ->where('cl.bussiness_on_date', $date)
-                        ->distinct()
-                        ->get()->toArray();
+            ->leftJoin('case_logs AS cl', 'cl.court_case_id', '=', 'case.id')
+            ->leftJoin('cliente AS ac', 'ac.id', '=', 'case.cliente_id')
+            ->leftJoin('tipoprocesso AS ct', 'ct.id', '=', 'case.case_types')
+            ->leftJoin('estadoprocesso AS s', 's.id', '=', 'case.case_status')
+            ->select(
+                'case.id AS case_id',
+                'cl.bussiness_on_date',
+                'cl.hearing_date',
+                'case.client_position',
+                'case.party_name',
+                'case.party_lawyer',
+                'ct.case_type_name AS caseType',
+                's.case_status_name',
+                'ac.nome',
+                'ac.sobrenome',
+                'ac.instituicao'
+            )
+            ->where('case.activo', 'S')
+            ->where('cl.bussiness_on_date', $date)
+            ->distinct()
+            ->get()->toArray();
 
         $data['totalCaseCount'] = count($casesCount);
 
         $totalData = DB::table('case_logs AS cl')
-                ->Join('juiz AS j', 'j.id', '=', 'cl.judge_type')
-                ->Join('processo AS case', 'case.id', '=', 'cl.court_case_id')
-                ->where('case.is_nb', 'No')
-                ->select('cl.judge_type', 'j.judge_name')
-                ->whereDate('cl.bussiness_on_date', '>=', $date)
-                ->whereDate('cl.bussiness_on_date', '<=', $date)
-                ->distinct()
-                ->get();
+            ->Join('juiz AS j', 'j.id', '=', 'cl.judge_type')
+            ->Join('processo AS case', 'case.id', '=', 'cl.court_case_id')
+            ->where('case.is_nb', 'No')
+            ->select('cl.judge_type', 'j.judge_name')
+            ->whereDate('cl.bussiness_on_date', '>=', $date)
+            ->whereDate('cl.bussiness_on_date', '<=', $date)
+            ->distinct()
+            ->get();
 
         $res = array();
         if (count($totalData) > 0 && !empty($totalData)) {
@@ -376,29 +414,43 @@ class DashBordController extends Controller
         $data['associatedName'] = Admin::select('associated_name')->where('id', "1")->first();
 
         $casesCount = DB::table('processo AS p')
-                        ->leftJoin('case_logs AS cl', 'cl.court_case_id', '=', 'p.id')
-                        ->leftJoin('cliente AS ac', 'ac.id', '=', 'p.cliente_id')
-                        ->leftJoin('tipoprocesso AS ct', 'ct.id', '=', 'p.case_types')
-                        ->leftJoin('tipoprocesso AS cst', 'cst.id', '=', 'p.case_sub_type')
-                        ->leftJoin('estadoprocesso AS s', 's.id', '=', 'p.case_status')
-                        ->select('p.id AS case_id', 'cl.bussiness_on_date', 'cl.hearing_date', 'p.client_position', 'p.party_name', 'p.party_lawyer', 'p.registration_number', 'p.judge_name', 'ct.case_type_name AS caseType', 'cst.case_type_name AS caseSubType', 's.case_status_name', 'ac.nome', 'ac.sobrenome', 'ac.instituicao'
-                        )
-                        ->where('p.activo', 'S')
-                        ->where('p.is_nb', 'No')
-                        ->where('cl.bussiness_on_date', $date)
-                        ->distinct()
-                        ->get()->toArray();
+            ->leftJoin('case_logs AS cl', 'cl.court_case_id', '=', 'p.id')
+            ->leftJoin('cliente AS ac', 'ac.id', '=', 'p.cliente_id')
+            ->leftJoin('tipoprocesso AS ct', 'ct.id', '=', 'p.case_types')
+            ->leftJoin('tipoprocesso AS cst', 'cst.id', '=', 'p.case_sub_type')
+            ->leftJoin('estadoprocesso AS s', 's.id', '=', 'p.case_status')
+            ->select(
+                'p.id AS case_id',
+                'cl.bussiness_on_date',
+                'cl.hearing_date',
+                'p.client_position',
+                'p.party_name',
+                'p.party_lawyer',
+                'p.registration_number',
+                'p.judge_name',
+                'ct.case_type_name AS caseType',
+                'cst.case_type_name AS caseSubType',
+                's.case_status_name',
+                'ac.nome',
+                'ac.sobrenome',
+                'ac.instituicao'
+            )
+            ->where('p.activo', 'S')
+            ->where('p.is_nb', 'No')
+            ->where('cl.bussiness_on_date', $date)
+            ->distinct()
+            ->get()->toArray();
         $data['totalCaseCount'] = count($casesCount);
 
         $totalData = DB::table('case_logs AS cl')
-                ->Join('juiz AS j', 'j.id', '=', 'cl.judge_type')
-                ->Join('processo AS case', 'case.id', '=', 'cl.court_case_id')
-                ->where('case.is_nb', 'No')
-                ->select('cl.judge_type', 'j.nome')
-                ->whereDate('cl.bussiness_on_date', '>=', $date)
-                ->whereDate('cl.bussiness_on_date', '<=', $date)
-                ->distinct()
-                ->get();
+            ->Join('juiz AS j', 'j.id', '=', 'cl.judge_type')
+            ->Join('processo AS case', 'case.id', '=', 'cl.court_case_id')
+            ->where('case.is_nb', 'No')
+            ->select('cl.judge_type', 'j.nome')
+            ->whereDate('cl.bussiness_on_date', '>=', $date)
+            ->whereDate('cl.bussiness_on_date', '<=', $date)
+            ->distinct()
+            ->get();
 
         $res = array();
         if (count($totalData) > 0 && !empty($totalData)) {
@@ -406,9 +458,9 @@ class DashBordController extends Controller
             foreach ($arrCourt as $key => $case_detail) {
 
                 $court_case_ids = CaseLog::where('judge_type', $case_detail->judge_type)
-                        ->where('bussiness_on_date', $date)
-                        ->pluck('court_case_id')
-                        ->toArray();
+                    ->where('bussiness_on_date', $date)
+                    ->pluck('court_case_id')
+                    ->toArray();
 
                 if (!empty($this->getcasesByIds($court_case_ids, $case_detail->judge_type, $date))) {
                     $res[$key]['judge_name'] = $case_detail->judge_name;
@@ -481,9 +533,12 @@ class DashBordController extends Controller
 
     public function appointmentList(Request $request)
     {
-
         $date = date('Y-m-d');
-        if (isset($request->appoint_date) && !empty($request->appoint_date)) {
+
+        // Se for uma consulta de dia específico
+        if (isset($request->selected_date) && !empty($request->selected_date)) {
+            $date = $request->selected_date;
+        } elseif (isset($request->appoint_date) && !empty($request->appoint_date)) {
             $date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->appoint_date)));
         }
 
@@ -496,11 +551,10 @@ class DashBordController extends Controller
 
 
         $totalData = DB::table('agenda AS a')
-                ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
-                ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'c.nome AS name', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
-                ->whereDate('data', '>=', $date)
-                ->whereDate('data', '<=', $date)
-                ->count();
+            ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
+            ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'ac.nome AS name', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+            ->whereDate('data', $date)
+            ->count();
         $totalRec = $totalData;
         // $totalData = DB::table('appointments')->count();
 
@@ -511,22 +565,21 @@ class DashBordController extends Controller
 
         $search = $request->input('search.value');
         $terms = DB::table('agenda AS a')
-                ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
-                ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'ac.nome AS name','ac.instituicao', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
-                ->whereDate('data', '>=', $date)
-                ->whereDate('data', '<=', $date)
-                ->where(function ($query) use ($search) {
-                    return $query->where('a.telefone', 'LIKE', "%{$search}%")
-                            ->orWhere('a.nome', 'LIKE', "%{$search}%")
-                            ->orWhere('ac.nome', 'LIKE', "%{$search}%")
-                            ->orWhere('ac.sobrenome', 'LIKE', "%{$search}%")
-                            ->orWhere('a.activo', 'LIKE', "%{$search}%")
-                            ->orWhereRaw("concat(ac.nome, ' ', ac.sobrenome) like '%{$search}%' ");
-                })
-                ->offset($start)
-                ->limit($limit)
-                ->orderBy($order, $dir)
-                ->get();
+            ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
+            ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'ac.nome AS name', 'ac.instituicao', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+            ->whereDate('data', $date)
+            ->where(function ($query) use ($search) {
+                return $query->where('a.telefone', 'LIKE', "%{$search}%")
+                    ->orWhere('a.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('ac.nome', 'LIKE', "%{$search}%")
+                    ->orWhere('ac.sobrenome', 'LIKE', "%{$search}%")
+                    ->orWhere('a.activo', 'LIKE', "%{$search}%")
+                    ->orWhereRaw("concat(ac.nome, ' ', ac.sobrenome) like '%{$search}%' ");
+            })
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->get();
 
         /*
           |--------------------------------------------
@@ -552,7 +605,7 @@ class DashBordController extends Controller
                 $nestedData['time'] = date('g:i a', strtotime($term->app_time));
                 $nestedData['mobile'] = $term->mobile;
                 if ($term->type == "new") {
-                    $nestedData['name'] =($term->instituicao)? $term->instituicao : $term->name . ' ' . $term->last_name;
+                    $nestedData['name'] = ($term->instituicao) ? $term->instituicao : $term->name . ' ' . $term->last_name;
                 } else {
                     $nestedData['name'] = $term->first_name . ' ' . $term->last_name;
                 }
@@ -570,6 +623,51 @@ class DashBordController extends Controller
         echo json_encode($json_data);
     }
 
+    public function getDayAppointments(Request $request)
+    {
+        $date = $request->selected_date ?? date('Y-m-d');
+
+        $appointments = DB::table('agenda AS a')
+            ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
+            ->select(
+                'a.id',
+                'a.telefone AS mobile',
+                'a.hora AS app_time',
+                'ac.nome AS first_name',
+                'ac.sobrenome AS last_name',
+                'ac.instituicao',
+                'a.nome AS appointment_name',
+                'a.type'
+            )
+            ->whereDate('a.data', $date)
+            ->where('a.activo', 'OPEN')
+            ->orderBy('a.hora', 'asc')
+            ->get();
+
+        $data = [];
+        foreach ($appointments as $appointment) {
+            $clientName = '';
+            if ($appointment->type == 'new') {
+                $clientName = $appointment->instituicao ?: $appointment->appointment_name . ' ' . $appointment->last_name;
+            } else {
+                $clientName = trim($appointment->first_name . ' ' . $appointment->last_name);
+            }
+
+            $data[] = [
+                'id' => $appointment->id,
+                'name' => $clientName,
+                'time' => date('H:i', strtotime($appointment->app_time)),
+                'mobile' => $appointment->mobile
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+            'total' => count($data)
+        ]);
+    }
+
     /**
      * Remove the specified resource from storage.
      *
@@ -580,5 +678,4 @@ class DashBordController extends Controller
     {
         //
     }
-
 }

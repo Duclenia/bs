@@ -21,18 +21,12 @@
                     <li><a href="{{ url('cliente/processos') }}"><i class="fa fa-gavel"></i> Meus Processos</a></li>
                 @endif
 
-                    <li><a><i class="fa fa-money"></i> {{ __('Agendamentos') }} <span
-                                class="fa fa-chevron-down"></span></a>
-                        <ul class="nav child_menu">
-
-                                <li><a href="{{ route('cliente.reuniao.index') }}">{{ __('form reuniao') }}</a></li>
-
-                                <li><a href="{{ route('cliente.consulta.index') }}">{{ __('form consulta') }}</a>
-
-
-                        </ul>
-                    </li>
-
+                <li><a><i class="fa fa-money"></i> {{ __('Agendamentos') }} <span class="fa fa-chevron-down"></span></a>
+                    <ul class="nav child_menu">
+                        <li><a href="{{ route('cliente.reuniao.index') }}">{{ __('form reuniao') }}</a></li>
+                        <li><a href="{{ route('cliente.consulta.index') }}">{{ __('form consulta') }}</a>
+                    </ul>
+                </li>
             @endif
 
             @can('task_list')
@@ -40,10 +34,8 @@
             @endcan
 
 
-            {{--  @can('appointment_list')
-                <li><a href="{{ route('agenda.index') }}"><i class="fa fa-calendar-plus-o"></i> Agendamento</a>
-                </li>
-            @endcan --}}
+
+
             @if (auth()->user()->can('service_list') || auth()->user()->can('invoice_list'))
                 <li><a><i class="fa fa-money"></i> {{ __('Agendamentos') }} <span
                             class="fa fa-chevron-down"></span></a>
@@ -177,6 +169,10 @@
 
                         @can('general_setting_edit')
                             <li><a href="{{ url('admin/general-setting') }}">{{ __('General Setting') }}</a></li>
+                        @endcan
+
+                        @can('appointment_list')
+                            <li><a href="{{ route('horario.index') }}"> Horario</a></li>
                         @endcan
 
                         @if (auth()->user()->user_type == 'Admin')

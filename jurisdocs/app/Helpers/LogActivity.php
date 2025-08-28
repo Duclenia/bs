@@ -374,5 +374,4 @@ class LogActivity {
             'urgent' => 'Urgent',
         ];
     }
-
 }

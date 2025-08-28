@@ -92,7 +92,7 @@ Route::group(['prefix' => 'cliente', 'as' => 'cliente.'], function () {
         Route::get('consulta_create', 'AppointmentController@create_consulta')->name('consulta_create');
         Route::post('appointment/data-list', 'AppointmentController@appointmentList')->name('appointment.list');
         Route::resource('reuniao', 'AppointmentReuniaoController');
-         Route::resource('agenda', 'AppointmentController');
+        Route::resource('agenda', 'AppointmentController');
 
         Route::post('appointment/reuniao/data-list', 'AppointmentReuniaoController@appointmentList')->name('appointmentReuniao.list');
         Route::resource('consulta', 'AppointmentConsultaController');
@@ -113,6 +113,7 @@ Route::group(['prefix' => 'admin', 'namespace' => 'Admin', 'middleware' => ['aut
     Route::get('/ajaxCalander', 'DashBordController@ajaxCalander');
     Route::post('dashboard-all-caseList', 'DashBordController@dashboardAllCaseList');
     Route::post('dashboard-appointment-list', 'DashBordController@appointmentList')->name('dashboard-appointment-list');
+    Route::post('get-day-appointments', 'DashBordController@getDayAppointments')->name('get-day-appointments');
     Route::get('downloadCaseBoard/{date}', 'DashBordController@downloadCaseBoard');
     Route::get('printCaseBoard/{date}', 'DashBordController@printCaseBoard');
 
@@ -236,6 +237,19 @@ Route::group(['prefix' => 'admin', 'namespace' => 'Admin', 'middleware' => ['aut
     Route::post('bairro-list', 'BairroController@caseStatusList')->name('bairro.list');
     Route::post('bairro-status-list/changestatus', 'BairroController@changeStatus')->name('bairro.status');
     Route::post('bairro_check_exist', 'BairroController@bairro_check_exist')->name('bairro_check_exist');
+
+    //configuração de horário
+    Route::resource('horario', 'HorarioController');
+    Route::post('horario/get-by-day', 'HorarioController@getByDay')->name('horario.getByDay');
+    Route::get('available-times/{date}', 'HorarioController@getAvailableTimes')->name('horario.availableTimes');
+    Route::get('blocked-dates', 'HorarioController@getBlockedDates')->name('horario.blockedDates');
+    Route::get('/available-times/{date}', 'HorarioController@getAvailableTimes')->name('horario.getAvailable');
+
+    //configuração de horario
+    Route::resource('horario', 'HorarioController');
+    Route::post('horario-list', 'HorarioController@caseStatusList')->name('horario.list');
+    Route::post('horario-status-list/changestatus', 'HorarioController@changeStatus')->name('horario.status');
+    Route::post('horario_check_exist', 'HorarioController@horario_check_exist')->name('horario_check_exist');
 
     Route::resource('escala-atendimento', 'EscalaTrabalhoController');
 

@@ -267,8 +267,38 @@
             color: #007bff;
             font-weight: bold;
         }
-    </style>
 
+        /* Estilo para campos de data com dias bloqueados */
+        input[type="date"].has-blocked-days {
+            border: 2px solid #ffc107 !important;
+            background-color: #fff3cd;
+        }
+
+        input[type="date"].has-blocked-days::after {
+            content: "⚠️ Alguns dias não estão disponíveis";
+            position: absolute;
+            font-size: 10px;
+            color: #856404;
+            top: -15px;
+            left: 0;
+        }
+
+        .date-field-container {
+            position: relative;
+        }
+
+        .date-warning {
+            font-size: 11px;
+            color: #856404;
+            margin-top: 2px;
+            display: none;
+        }
+
+        input[type="date"].has-blocked-days+.date-warning {
+            display: block;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const newClientRadio = document.getElementById('test5');
@@ -297,8 +327,6 @@
                 }
             }
 
-
-
             // Função para encontrar elementos no contexto ativo
             function findActiveElements() {
                 const context = getActiveContext();
@@ -308,8 +336,8 @@
                     plataformaSelect: context.querySelector('select[id*="vc_plataforma"]'),
                     linkInput: context.querySelector('input[id*="vc_link_acesso"]'),
                     checkbox: context.querySelector('input[type="checkbox"][id*="it_termo"]'),
-                    dateInput: context.querySelector('input[type="date"][id*="data"]'),
-                    timeInput: context.querySelector('input[type="time"][id*="hora"]'),
+                    dateInput: context.querySelector('input[type="text"][id*="data"]'),
+                    timeInput: context.querySelector('select[id*="hora"]'),
                     context: context
                 };
             }
@@ -408,8 +436,6 @@
                     if (linkDiv) linkDiv.style.display = "none";
                 }
             }
-
-
 
             // Configurar event listeners
             function setupEventListeners() {
@@ -512,47 +538,79 @@
         });
     </script>
 
-    <script>
-        const dataInput_2 = document.getElementById("data2");
-        const horaInput_2 = document.getElementById("hora2");
-        const dataInput = document.getElementById("data");
-        const horaInput = document.getElementById("hora");
 
-        const hoje_2 = new Date().toISOString().split("T")[0];
-        dataInput_2.min = hoje_2;
-
-        dataInput_2.addEventListener("change", () => {
-            const agora = new Date();
-            const horaAtual_2 = String(agora.getHours()).padStart(2, "0");
-            const minutoAtual_2 = String(agora.getMinutes()).padStart(2, "0");
-            const horaFormatada_2 = `${horaAtual_2}:${minutoAtual_2}`;
-
-            if (dataInput_2.value === hoje) {
-                horaInput_2.min = horaFormatada_2;
-            } else {
-                horaInput_2.min = "00:00";
-            }
-        });
-
-        const hoje = new Date().toISOString().split("T")[0];
-        dataInput.min = hoje;
-        dataInput.addEventListener("change", () => {
-
-            const agora = new Date();
-            const horaAtual = String(agora.getHours()).padStart(2, "0");
-            const minutoAtual = String(agora.getMinutes()).padStart(2, "0");
-            const horaFormatada = `${horaAtual}:${minutoAtual}`;
-
-            if (dataInput.value === hoje) {
-                horaInput.min = horaFormatada;
-            } else {
-                horaInput.min = "00:00";
-            }
-        });
-    </script>
 @endsection
 
 @push('js')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            let blockedDays = [];
+            let minDate = '';
+
+
+            // Carregar datas bloqueadas
+            $.get('/bs/admin/blocked-dates', function(response) {
+
+                blockedDays = response.blocked_days;
+                minDate = response.min_date;
+
+                flatpickr("#data, #data2", {
+                    dateFormat: "Y-m-d",
+                    minDate: minDate,
+                    disable: [
+                        function(date) {
+                            return blockedDays.includes(date.getDay());
+                        }
+                    ],
+                    locale: flatpickr.l10ns.pt,
+                    onChange: function(selectedDates, dateStr, instance) {
+                        // Disparar evento change para buscar horários
+                        $(instance.element).trigger('change');
+                    }
+                });
+            });
+            $(document).on('change', '#data, #data2', function() {
+                let date = $(this).val();
+                let horaSelect = $(this).attr('id') === 'data' ? '#hora' : '#hora2';
+                if (date) {
+                    $.ajax({
+                        url: `/bs/admin/available-times/${date}`,
+                        type: 'GET',
+                        success: function(response) {
+                            console.log('Resposta:', response);
+
+                            let options = '<option value="">Selecionar horário</option>';
+
+                            if (response.available_times && response.available_times.length >
+                                0) {
+                                response.available_times.forEach(time => {
+                                    options +=
+                                        `<option value="${time}">${time}</option>`;
+                                });
+                            } else {
+                                options +=
+                                    '<option value="">Nenhum horário disponível</option>';
+                            }
+
+                            $(horaSelect).html(options);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro ao buscar horários:', error);
+                            $(horaSelect).html(
+                                '<option value="">Erro ao carregar horários</option>');
+                        }
+                    });
+                } else {
+                    $(horaSelect).html('<option value="">Selecionar horário</option>');
+                }
+            });
+        });
+    </script>
+
     <script src="{{ asset('assets/admin/appointment/appointment.js') }}"></script>
     <script src="{{ asset('assets/js/masked-input/masked-input.min.js') }}"></script>
     <script src="{{ asset('assets/js/appointment/appointment-validation.js') }}"></script>

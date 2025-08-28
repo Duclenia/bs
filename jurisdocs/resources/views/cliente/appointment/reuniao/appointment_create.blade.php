@@ -61,17 +61,16 @@
 
                             <div class="row">
                                 <div class="col-md-4 form-group">
-                                    <label for="date">{{ __('Data Preferencial') }} <span
+                                    <label for="data2">{{ __('Data Preferencial') }} <span
                                             class="text-danger">*</span></label>
-                                    <input type="date" id="data" class="form-control" name="date"
+                                    <input type="date" class="form-control" id="data" name="date"
                                         value="{{ old('date') }}" required>
                                 </div>
 
                                 <div class="col-md-4 form-group">
-                                    <label for="time">{{ __('Horario Preferencial') }} <span
+                                    <label for="hora2">{{ __('Horario Preferencial') }} <span
                                             class="text-danger">*</span></label>
-                                    <input type="time" class="form-control" id="hora" name="time"
-                                        value="{{ old('time') }}" required>
+                                    <select class="form-control" name="time" id="hora" required></select>
                                 </div>
                                 <div class="col-md-4 form-group">
                                     <label for="vc_plataforma">Plataforma preferida <span
@@ -251,30 +250,78 @@
             });
         })
     </script>
-    <script>
-        const dataInput = document.getElementById("data");
-        const horaInput = document.getElementById("hora");
 
-
-        const hoje = new Date().toISOString().split("T")[0];
-        dataInput.min = hoje;
-        dataInput.addEventListener("change", () => {
-
-            const agora = new Date();
-            const horaAtual = String(agora.getHours()).padStart(2, "0");
-            const minutoAtual = String(agora.getMinutes()).padStart(2, "0");
-            const horaFormatada = `${horaAtual}:${minutoAtual}`;
-
-            if (dataInput.value === hoje) {
-                horaInput.min = horaFormatada;
-            } else {
-                horaInput.min = "00:00";
-            }
-        });
-    </script>
 @endsection
 
 @push('js')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            let blockedDays = [];
+            let minDate = '';
+
+
+            // Carregar datas bloqueadas
+            $.get('/bs/admin/blocked-dates', function(response) {
+
+                blockedDays = response.blocked_days;
+                minDate = response.min_date;
+
+                flatpickr("#data, #data2", {
+                    dateFormat: "Y-m-d",
+                    minDate: minDate,
+                    disable: [
+                        function(date) {
+                            return blockedDays.includes(date.getDay());
+                        }
+                    ],
+                    locale: flatpickr.l10ns.pt,
+                    onChange: function(selectedDates, dateStr, instance) {
+                        // Disparar evento change para buscar horários
+                        $(instance.element).trigger('change');
+                    }
+                });
+            });
+            $(document).on('change', '#data, #data2', function() {
+                let date = $(this).val();
+                let horaSelect = $(this).attr('id') === 'data' ? '#hora' : '#hora2';
+                if (date) {
+                    $.ajax({
+                        url: `/bs/admin/available-times/${date}`,
+                        type: 'GET',
+                        success: function(response) {
+                            console.log('Resposta:', response);
+
+                            let options = '<option value="">Selecionar horário</option>';
+
+                            if (response.available_times && response.available_times.length >
+                                0) {
+                                response.available_times.forEach(time => {
+                                    options +=
+                                        `<option value="${time}">${time}</option>`;
+                                });
+                            } else {
+                                options +=
+                                    '<option value="">Nenhum horário disponível</option>';
+                            }
+
+                            $(horaSelect).html(options);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro ao buscar horários:', error);
+                            $(horaSelect).html(
+                                '<option value="">Erro ao carregar horários</option>');
+                        }
+                    });
+                } else {
+                    $(horaSelect).html('<option value="">Selecionar horário</option>');
+                }
+            });
+        });
+    </script>
     <script src="{{ asset('assets/cliente/appointment/appointment.js') }}"></script>
     <script src="{{ asset('assets/js/masked-input/masked-input.min.js') }}"></script>
     <script src="{{ asset('assets/cliente/appointment/appointment-validation.js') }}"></script>

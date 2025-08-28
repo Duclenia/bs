@@ -18,7 +18,6 @@
         </div>
     </div>
 
-
     <div class="col-md-6 form-group">
         <label for="mobile">Contacto telefónico (opcional)</label>
         <input type="number" class="form-control" id="mobile" name="mobile" value="{{ old('mobile') }}"
@@ -50,13 +49,15 @@
 <div class="row">
     <div class="col-md-4 form-group">
         <label for="date">{{ __('Data Preferencial') }} <span class="text-danger">*</span></label>
-        <input type="date" id="data" class="form-control" name="date" value="{{ old('date') }}" required>
+        <input type="text" id="data" class="form-control" name="date" value="{{ old('date') }}" required>
+
     </div>
 
     <div class="col-md-4 form-group">
         <label for="time">{{ __('Horario Preferencial') }} <span class="text-danger">*</span></label>
-        <input type="time" class="form-control" id="hora" name="time" value="{{ old('time') }}" required>
-    </div>
+        <select class="form-control" name="time" id="hora" required></select>
+    {{--     <input type="time" class="form-control" id="hora" name="time" value="{{ old('time') }}" required>
+    --}} </div>
     <div class="col-md-4 form-group">
         <label for="vc_plataforma">Plataforma preferida <span class="text-danger">*</span></label>
         <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
@@ -66,7 +67,7 @@
             </option>
             <option value="Zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom
             </option>
-           
+
             <option value="Chamada Telefónica" {{ old('vc_plataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
                 Chamada Telefónica</option>
             <option value="Presencial" {{ old('vc_plataforma') == 'Presencial' ? 'selected' : '' }}>

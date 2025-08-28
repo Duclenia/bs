@@ -13,18 +13,18 @@ use Validator;
 class BairroController extends Controller
 {
     use DatatablTrait;
-    
+
     private $municipio;
     private $bairro;
-    
-    
+
+
     public function __construct(Municipio $municipio, Bairro $bairro)
     {
         $this->municipio = $municipio;
         $this->bairro = $bairro;
 
     }
-    
+
     /**
      * Display a listing of the resource.
      *
@@ -69,14 +69,14 @@ class BairroController extends Controller
 
         if ($validator->fails())
             return response()->json(['errors' => $validator->errors()->all()]);
-        
-        
+
+
         $bairro = $this->bairro->create(['nome' => addslashes($request->bairro)]);
 
         $bairro->municipios()->sync($request->municipio);
 
         if ($bairro) {
-            
+
             return response()->json([
                         'success' => true,
                         'message' => 'Bairro registado',
@@ -104,9 +104,9 @@ class BairroController extends Controller
     public function edit($id)
     {
         $dados['bairro'] = $this->bairro->findOrFail($id);
-        
+
         $dados['municipios'] = $this->municipio->all();
-        
+
         return response()->json([
                     'html' => view('admin.configuracoes.bairro.bairro_edit', $dados)->render()
         ]);
@@ -128,14 +128,14 @@ class BairroController extends Controller
 
         if ($validator->fails())
             return response()->json(['errors' => $validator->errors()->all()]);
-        
+
 
         $bairro = $this->bairro->findorfail($id);
-        
+
         $bairro->update(['nome' => addslashes($request->bairro)]);
-        
+
         $bairro->municipios()->sync($request->municipio);
-        
+
         return response()->json([
                     'success' => true,
                     'message' => 'Dados actualizados',
@@ -152,10 +152,10 @@ class BairroController extends Controller
     {
         //
     }
-    
+
     public function caseStatusList(Request $request)
     {
-        
+
         $user = auth()->user();
 
         $isEdit = $user->can('bairro_edit');
@@ -235,8 +235,8 @@ class BairroController extends Controller
 
         return response()->json($json_data);
     }
-    
-    
+
+
     public function bairro_check_exist(Request $request)
     {
 
