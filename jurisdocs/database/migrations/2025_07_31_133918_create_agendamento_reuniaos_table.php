@@ -18,6 +18,9 @@ class CreateAgendamentoReuniaosTable extends Migration
             $table->string('vc_entidade');
             $table->longText('vc_motivo')->nullable()->default('text');
             $table->string('vc_pataforma');
+            $table->string('meeting_id')->nullable();
+            $table->string('join_url')->nullable();
+            $table->string('start_url')->nullable(); // só no zoom
             $table->longText('vc_nota')->nullable()->default('text');
             $table->boolean('it_termo')->default(false);
             $table->unsignedBigInteger('agenda_id');

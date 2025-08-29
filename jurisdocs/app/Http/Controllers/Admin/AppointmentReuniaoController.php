@@ -77,8 +77,6 @@ class AppointmentReuniaoController extends Controller
             $agendaReuniao->vc_entidade = ($request->vc_entidade) ? $request->vc_entidade : $cliente->full_name;
         }
         $agendaReuniao->vc_motivo = addslashes($request->vc_motivo);
-        $agendaReuniao->vc_pataforma = $request->vc_plataforma;
-        $agendaReuniao->link_reuniao = $request->vc_link_acesso;
         $agendaReuniao->vc_nota = addslashes($request->vc_nota);
         $agendaReuniao->agenda_id = $a->id;
         $agendaReuniao->it_termo = $request->it_termo;
@@ -223,12 +221,17 @@ class AppointmentReuniaoController extends Controller
 
 
                 //for CANCEL BY ADVOCATE status
-                $con .= "<option value='CANCEL BY ADVOCATE'";
-                if ($term->status == 'CANCEL BY ADVOCATE') {
+                $con .= "<option value='CANCEL BY ADVOCA'";
+                if ($term->status == 'CANCEL BY ADVOCA') {
                     $con .= "selected";
                 }
-               // $con .= ">Cancelado pelo advogado(a)</option>";
+                $con .= ">Cancelado pelo advogado(a)</option>";
 
+                $con .= "<option value='SERVED'";
+                if ($term->status == 'SERVED') {
+                    $con .= "selected";
+                }
+                $con .= ">Cliente Atendido(a)</option>";
 
                 $con .= "</select>";
 

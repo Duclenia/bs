@@ -33,14 +33,26 @@
                                         </tr>
                                         <tr>
                                             <th>Plataforma:</th>
-                                            <td>{{ $appointment->vc_pataforma }}</td>
+                                            <td>{{ $appointment->vc_plataforma ?:'-' }}</td>
                                         </tr>
                                         <tr>
-                                            <th>Link da Reunião:</th>
+                                            <th>Link para juntar ao meeting :</th>
                                             <td>
-                                                @if ($appointment->link_reuniao)
-                                                    <a href="{{ $appointment->link_reuniao }}"
-                                                        target="_blank">{{ $appointment->link_reuniao }}</a>
+
+                                                @if ($appointment->join_url)
+                                                    <a href="{{ $appointment->join_url }}"
+                                                        target="_blank">{{Str::limit($appointment->join_url , 45, '...') }}</a>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Link do meeting:</th>
+                                            <td>
+                                                @if ($appointment->start_url)
+                                                    <a href="{{ $appointment->start_url }}"
+                                                        target="_blank">{{ Str::limit($appointment->start_url, 45, '...') }}</a>
                                                 @else
                                                     -
                                                 @endif

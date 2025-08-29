@@ -581,17 +581,7 @@ class DashBordController extends Controller
             ->orderBy($order, $dir)
             ->get();
 
-        /*
-          |--------------------------------------------
-          | For table search filter from frontend site inside two table namely courses and courseterms.
-          |--------------------------------------------
-         */
 
-        /*
-          |----------------------------------------------------------------------------------------------------------------------------------
-          | Creating json array with all records based on input from front end site like all,searcheded,pagination record (i.e 10,20,50,100).
-          |----------------------------------------------------------------------------------------------------------------------------------
-         */
 
         $totalFiltered = $terms->count();
 

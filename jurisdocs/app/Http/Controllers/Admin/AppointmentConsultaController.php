@@ -11,6 +11,7 @@ use App\Models\{Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
 use App\Helpers\LogActivity;
 use App\Http\Requests\StoreClient;
 use App\Notifications\ActivityNotification;
+use App\Services\ZoomService;
 use Illuminate\Support\Facades\Notification;
 use App\Traits\DatatablTrait;
 use Gate;
@@ -87,17 +88,17 @@ class AppointmentConsultaController extends Controller
     public function store(Agenda $a, StoreAppointment $request)
     {
 
+        $meeting = null;
         $agendaReuniao = new AgendamentoConsulta();
         $agendaReuniao->vc_tipo = $request->vc_tipo;
         $agendaReuniao->vc_area = $request->vc_area ? $request->vc_area : $request->vc_area_outro;
-        $agendaReuniao->vc_pataforma = $request->vc_plataforma;
-        $agendaReuniao->link_reuniao = $request->vc_link_acesso;
         $agendaReuniao->vc_nota = addslashes($request->vc_nota);
         $agendaReuniao->agenda_id = $a->id;
         $agendaReuniao->it_termo = $request->it_termo;
         $agendaReuniao->it_envDocs = $request->it_envDocs ? $request->it_envDocs : 0;
         $agendaReuniao->vc_caminho_documento = $request->vc_doc;
         $agendaReuniao->save();
+
         return redirect()->route('consulta.index')->with('success', "Agendamento de consulta criado.");
     }
 
@@ -111,7 +112,6 @@ class AppointmentConsultaController extends Controller
             ->where('agenda.id', decrypt($id))
             ->select('agenda.*', 'ac.*', 'cl.nome as cliente_nome', 'cl.sobrenome as cliente_sobrenome', 'cl.instituicao as cliente_instituicao')
             ->first();
-
         return view('admin.agendamento.consulta.appointment_show', $data);
     }
 
@@ -263,6 +263,12 @@ class AppointmentConsultaController extends Controller
                 }
                 $con .= ">Cancelado pelo advogado(a)</option>";
 
+                $con .= "<option value='SERVED'";
+                if ($term->status == 'SERVED') {
+                    $con .= "selected";
+                }
+                $con .= ">Cliente Atendido(a)</option>";
+
 
                 $con .= "</select>";
 
@@ -273,7 +279,7 @@ class AppointmentConsultaController extends Controller
                     $nestedData['is_active'] = "";
                 }
 
-               /*  if (empty($request->input('search.value'))) {
+                /*  if (empty($request->input('search.value'))) {
                     $final = $totalRec - $start;
                     $nestedData['id'] = $final;
                     $totalRec--;
@@ -281,7 +287,7 @@ class AppointmentConsultaController extends Controller
                     $start++;
                     $nestedData['id'] = $start;
                 } */
-                 $nestedData['id'] = $term->id;
+                $nestedData['id'] = $term->id;
                 $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
                 $nestedData['time'] = date('g:i a', strtotime($term->time));
 
@@ -329,9 +335,9 @@ class AppointmentConsultaController extends Controller
         if (!$user->can('appointment_edit'))
             return back();
 
-       $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
+        $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
             ->where('agenda.id', decrypt($id))
-            ->select('agenda.*','ac.vc_area as vc_area', 'ac.vc_tipo', 'ac.vc_pataforma', 'ac.link_reuniao', 'ac.vc_nota', 'ac.it_termo', 'ac.it_envDocs', 'ac.vc_caminho_documento')
+            ->select('agenda.*', 'ac.vc_area as vc_area', 'ac.vc_tipo', 'ac.vc_pataforma', 'ac.link_reuniao', 'ac.vc_nota', 'ac.it_termo', 'ac.it_envDocs', 'ac.vc_caminho_documento')
             ->first();
         $data['client_list'] = $this->cliente->where('id',  $data['appointment']->cliente_id)->get();
 
@@ -364,12 +370,12 @@ class AppointmentConsultaController extends Controller
             'link_reuniao' => $request->vc_link_acesso,
             'vc_nota' => addslashes($request->vc_nota),
             'it_termo' => $request->it_termo,
-             'it_envDocs' => $request->it_envDocs,
+            'it_envDocs' => $request->it_envDocs,
             'vc_caminho_documento' => $request->vc_doc
         ]);
 
         return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião atualizado.");
-     }
+    }
 
     /**
      * Remove the specified resource from storage.

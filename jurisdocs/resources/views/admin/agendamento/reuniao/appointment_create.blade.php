@@ -423,18 +423,6 @@
 
                 if (!plataformaSelect) return;
 
-                const plataforma = plataformaSelect.value;
-                const linkDiv = linkInput ? linkInput.closest('.form-group') : null;
-
-                if (plataforma === "Google Meet" || plataforma === "Zoom" || plataforma === "Teams") {
-                    const linkSimulado =
-                        `https://meet.fake/${plataforma.toLowerCase().replace(/\s/g, '')}/${Math.random().toString(36).substring(2, 10)}`;
-                    if (linkInput) linkInput.value = linkSimulado;
-                    if (linkDiv) linkDiv.style.display = "block";
-                } else {
-                    if (linkInput) linkInput.value = "";
-                    if (linkDiv) linkDiv.style.display = "none";
-                }
             }
 
             // Configurar event listeners

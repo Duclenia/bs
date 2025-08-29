@@ -371,3 +371,23 @@ body {
 .select2-container{
     width: 100% !important;
 }
+
+.appointment-badge {
+    position: absolute;
+    top: 2px;
+    background-color: #f0ad4e;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.fc-day-number {
+    position: relative;
+}

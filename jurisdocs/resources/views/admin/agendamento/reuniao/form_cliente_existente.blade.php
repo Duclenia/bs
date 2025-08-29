@@ -65,7 +65,7 @@
             <option value="Google Meet" {{ old('vc_plataforma') == 'Google Meet' ? 'selected' : '' }}>Google
                 Meet
             </option>
-            <option value="Zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom
+            <option value="zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom
             </option>
 
             <option value="Chamada Telefónica" {{ old('vc_plataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
@@ -73,10 +73,6 @@
             <option value="Presencial" {{ old('vc_plataforma') == 'Presencial' ? 'selected' : '' }}>
                 Presencial</option>
         </select>
-    </div>
-    <div class="col-md-4 form-group" id="div_link_acesso" style="display: none;">
-        <label for="vc_link_acesso">Link de Acesso</label>
-        <input type="text" class="form-control" id="vc_link_acesso" name="vc_link_acesso" readonly>
     </div>
 
 

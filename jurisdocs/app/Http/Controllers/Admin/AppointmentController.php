@@ -10,11 +10,14 @@ use App\Http\Controllers\Controller;
 use App\Models\{Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
 use App\Helpers\LogActivity;
 use App\Http\Requests\StoreClient;
+use App\Mail\MeetingCreatedMail;
 use App\Notifications\ActivityNotification;
+use App\Services\ZoomService;
 use Illuminate\Support\Facades\Notification;
 use App\Traits\DatatablTrait;
 use Gate;
 use DB;
+use Illuminate\Support\Facades\Mail;
 
 use function PHPSTORM_META\type;
 
@@ -101,6 +104,7 @@ class AppointmentController extends Controller
     {
 
         try {
+
             $agenda = $this->criarAgenda($request);
 
             if ($request->type_agenda == "reuniao") {
@@ -108,6 +112,8 @@ class AppointmentController extends Controller
             } else {
                 return  $this->agendaConsulta->store($agenda, $request);
             }
+
+            //Mail::to($request->email)->send(new MeetingCreatedMail($agenda));
         } catch (\Exception $e) {
             // Em produção, use log ao invés de dd()
 
@@ -122,6 +128,7 @@ class AppointmentController extends Controller
 
         $agenda->cliente_id = $request->type == "new"  ? $this->clienteAgenda->storeCliente($request)
             : $request->exists_client;
+
         $agenda->email = $request->email;
         $agenda->telefone = $request->mobile;
         $agenda->data = date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->date)));
@@ -129,6 +136,19 @@ class AppointmentController extends Controller
         $agenda->observacao = addslashes($request->vc_nota);
         $agenda->type = $request->type;
         $agenda->assunto = "dd";
+
+        if ($request->vc_plataforma == 'zoom') {
+            $zoom = new ZoomService();
+            $data = $zoom->createMeeting(
+                $request->vc_tipo ?: 'reunião',
+                "{$request->date}T{$request->time}:00",
+                60
+            );
+            $agenda->vc_plataforma = $request->vc_plataforma;
+            $agenda->join_url = $data['join_url'];
+            $agenda->start_url = $data['start_url'];
+        }
+
         $agenda->save();
 
         return $agenda;
@@ -255,7 +275,7 @@ class AppointmentController extends Controller
                 if ($term->status == 'CANCEL BY ADVOCATE') {
                     $con .= "selected";
                 }
-               // $con .= ">Cancelado pelo advogado(a)</option>";
+                // $con .= ">Cancelado pelo advogado(a)</option>";
 
 
                 $con .= "</select>";

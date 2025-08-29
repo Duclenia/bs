@@ -182,7 +182,6 @@ function ajaxindicatorstart(text) {
 
 
 function change_status(id, status, table) {
-
     $.confirm({
         title: 'Tem a certeza de que pretende alterar o estado?',
         content: 'Esta ação irá alterar o estado do agendamento.',

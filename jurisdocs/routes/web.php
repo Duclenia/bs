@@ -80,6 +80,8 @@ Route::group(['prefix' => 'cliente', 'as' => 'cliente.'], function () {
     Route::get('processos', 'ClienteController@caseListByClientId');
     Route::post('client_case_list', 'ClienteController@client_case_list')->name('client.case_view.list');
     Route::get('/ajaxCalander', 'ClienteController@ajaxCalander');
+    Route::post('get-day-appointmentsCliente', 'ClienteController@getDayAppointments')->name('get-day-appointmentsCliente');
+
     Route::post('agendar', 'ClienteController@agendar');
     Route::get('change/password', 'Admin\PerfilController@change_pass')->name('alterar.palavra.passe')->middleware('auth');
 

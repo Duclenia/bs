@@ -92,13 +92,6 @@
                                             Presencial</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4 form-group" id="div_link_acesso" style="display: none;">
-                                    <label for="vc_link_acesso">Link de Acesso</label>
-                                    <input type="text" class="form-control" id="vc_link_acesso" name="vc_link_acesso"
-                                        readonly>
-                                </div>
-
-
                             </div>
 
                             <div class="row">
@@ -222,10 +215,7 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const plataformaSelect = document.getElementById('vc_plataforma');
-            const linkInput = document.getElementById('vc_link_acesso');
-            const linkDiv = document.getElementById('div_link_acesso');
-
+         
             const checkbox = document.getElementById('it_termo');
             const btnSubmit = document.getElementById('btn_submit');
             const btnSubmitExisting = document.getElementById('btn_submit_existing');
@@ -234,20 +224,6 @@
                 btnSubmitExisting.disabled = !this.checked;
             });
 
-            plataformaSelect.addEventListener('change', function() {
-                const plataforma = this.value;
-
-                // Simula a geração de link
-                if (plataforma === "Google Meet" || plataforma === "Zoom" || plataforma === "Teams") {
-                    const linkSimulado =
-                        `https://meet.fake/${plataforma.toLowerCase().replace(/\s/g, '')}/${Math.random().toString(36).substring(2, 10)}`;
-                    linkInput.value = linkSimulado;
-                    linkDiv.style.display = "block";
-                } else {
-                    linkInput.value = "";
-                    linkDiv.style.display = "none";
-                }
-            });
         })
     </script>
 

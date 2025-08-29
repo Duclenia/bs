@@ -375,9 +375,17 @@
        id="printCaseBoard"
        value="{{url('admin/printCaseBoard')}}">
 
+
 @endcan
 
 @if(auth()->user()->user_type == 'Cliente')
+<input type="hidden" name="ajaxCalanderCliente"
+       id="ajaxCalanderCliente"
+       value="{{ url('cliente/ajaxCalander') }}">
+
+       <input type="hidden" name="get-day-appointmentsCliente"
+       id="get-day-appointmentsCliente" value="{{ url('cliente/get-day-appointmentsCliente') }}">
+
 
 <div class="page-title">
     <div class="title_left">

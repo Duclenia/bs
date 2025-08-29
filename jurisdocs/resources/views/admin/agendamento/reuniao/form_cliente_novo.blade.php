@@ -28,10 +28,6 @@
             <option value="Presencial" {{ old('vc_plataforma') == 'Presencial' ? 'selected' : '' }}>Presencial</option>
         </select>
     </div>
-    <div class="col-md-4 form-group" id="div_link_acesso" style="display: none;">
-        <label for="vc_link_acesso">Link de Acesso</label>
-        <input type="text" class="form-control" id="vc_link_acesso" name="vc_link_acesso" readonly>
-    </div>
 
 
 </div>
