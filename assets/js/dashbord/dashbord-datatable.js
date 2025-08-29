@@ -6,7 +6,7 @@ var appointment = $('#appointment').val();
 var ajaxCalander = $('#ajaxCalander').val();
 var date_format_datepiker = $('#date_format_datepiker').val();
 var dashboard_appointment_list = $('#dashboard_appointment_list').val();
-var getDayAppointment=$('#get-day-appointments').val();
+var getDayAppointment = $('#get-day-appointments').val();
 var getNextDateModald = $('#getNextDateModal').val();
 var getChangeCourtModald = $('#getChangeCourtModal').val();
 var getCaseImportantModald = $('#getCaseImportantModal').val();
@@ -29,7 +29,7 @@ var DatatableRemoteAjaxDemo = function () {
             "processing": true,
             "serverSide": true,
             "order": [[0, "desc"]],
-            "oLanguage": {sProcessing: "<div class='loader-container'><div id='loader'></div></div>"},
+            "oLanguage": { sProcessing: "<div class='loader-container'><div id='loader'></div></div>" },
             "ajax": {
                 "url": dashboard_appointment_list,
                 "dataType": "json",
@@ -41,12 +41,12 @@ var DatatableRemoteAjaxDemo = function () {
                 }
             },
             "columns": [
-                {"data": "id"},
-                {"data": "name"},
+                { "data": "id" },
+                { "data": "name" },
                 // { "data": "mobile" },
-                {"data": "date"},
-                {"data": "time"},
-                        // { "data": "options" },
+                { "data": "date" },
+                { "data": "time" },
+                // { "data": "options" },
             ],
             //Set column definition initialisation properties.
             "columnDefs": [
@@ -92,7 +92,7 @@ var DatatableRemoteAjaxDemo = function () {
                 eventLimit: true,
                 views: {
                     timeGrid: {
-                        eventLimit: 6 
+                        eventLimit: 6
                     }
                 },
                 timezone: 'local',
@@ -119,11 +119,11 @@ var DatatableRemoteAjaxDemo = function () {
                         window.location.href = appointment + "/" + id + "/edit";
                     }
                 },
-                dayClick: function(date, jsEvent, view) {
+                dayClick: function (date, jsEvent, view) {
                     // Mostrar agendas do dia clicado
                     showDayAppointmentsAdmin(date.format('YYYY-MM-DD'));
                 },
-                dayRender: function(date, cell) {
+                dayRender: function (date, cell) {
                     // Verificar se o dia tem agendamentos
                     checkDayAppointmentsAdmin(date, cell);
                 },
@@ -149,8 +149,8 @@ var DatatableRemoteAjaxDemo = function () {
                 }
 
             });
-            
-            
+
+
             $('#appoint_range').on('change', function () {
                 t.destroy();
                 DatatableRemoteAjaxDemo.init()
@@ -249,7 +249,7 @@ function getCourt(id) {
         $.ajax({
             url: getCourtd,
             method: "POST",
-            data: {id: id},
+            data: { id: id },
             success: function (result) {
                 if (result.errors) {
                     $('.alert-danger').html('');
@@ -273,6 +273,8 @@ function printCaseBorad() {
 }
 
 function checkDayAppointmentsAdmin(date, cell) {
+    var today = moment().startOf('day');
+    var cellDate = moment(date).startOf('day');
     $.ajax({
         url: '/bs/admin/get-day-appointments',
         type: 'POST',
@@ -280,17 +282,23 @@ function checkDayAppointmentsAdmin(date, cell) {
             _token: token,
             selected_date: date.format('YYYY-MM-DD')
         },
-        success: function(response) {
+        success: function (response) {
             if (response.success && response.total > 0) {
-                // Pintar o dia com agendamentos
-                cell.css({
-                    'background-color': '#fcf8e3',
-                 
-                    'position': 'relative'
-                });
-                
-                // Adicionar badge com número de agendamentos
-                cell.append('<span class="appointment-badge" > ' + response.total + '</span>');
+                if (cellDate.isBefore(today)) {
+                    cell.css({
+                        'background-color': '#f5f5f5',
+                        'color': '#999',
+                        'opacity': '0.6'
+                    });
+                      cell.append('<span class="appointment-badge" style="background-color:#3c3c3c" > ' + response.total + '</span>');
+                } else {
+                    cell.css({
+                        'background-color': '#6ee50230',
+                        'position': 'relative'
+                    });
+                      cell.append('<span class="appointment-badge" > ' + response.total + '</span>');
+                }
+
             }
         }
     });
@@ -304,8 +312,8 @@ function showDayAppointmentsAdmin(selectedDate) {
             _token: token,
             selected_date: selectedDate
         },
-        success: function(response) {
-            
+        success: function (response) {
+
             var appointments = response.data;
             var modalContent = '<div class="modal fade" id="dayAppointmentsModal" tabindex="-1" role="dialog">';
             modalContent += '<div class="modal-dialog" role="document">';
@@ -315,41 +323,41 @@ function showDayAppointmentsAdmin(selectedDate) {
             modalContent += '<button type="button" class="close" data-dismiss="modal">&times;</button>';
             modalContent += '</div>';
             modalContent += '<div class="modal-body">';
-            
+
             if (appointments.length > 0) {
                 modalContent += '<div class="table-responsive">';
                 modalContent += '<table class="table table-striped">';
                 modalContent += '<thead><tr><th>Cliente</th><th>Hora</th><th>Telefone</th></tr></thead>';
                 modalContent += '<tbody>';
-                
-                appointments.forEach(function(appointment) {
+
+                appointments.forEach(function (appointment) {
                     modalContent += '<tr>';
                     modalContent += '<td>' + appointment.name + '</td>';
                     modalContent += '<td>' + appointment.time + '</td>';
                     modalContent += '<td>' + appointment.mobile + '</td>';
                     modalContent += '</tr>';
                 });
-                
+
                 modalContent += '</tbody></table></div>';
             } else {
                 modalContent += '<p class="text-center">Nenhum agendamento encontrado para este dia.</p>';
             }
-            
+
             modalContent += '</div>';
             modalContent += '<div class="modal-footer">';
             modalContent += '<button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>';
             modalContent += '</div>';
             modalContent += '</div></div></div>';
-            
+
             // Remover modal anterior se existir
             $('#dayAppointmentsModal').remove();
-            
+
             // Adicionar e mostrar novo modal
             $('body').append(modalContent);
             $('#dayAppointmentsModal').modal('show');
         },
-        error: function() {
-           
+        error: function () {
+
             alert('Erro ao carregar agendamentos do dia.');
         }
     });

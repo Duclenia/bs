@@ -35,9 +35,9 @@ $(document).ready(function () {
 
         dayClick: function (date, jsEvent, view, resourceObj) {
             // Mostrar agendas do dia clicado
-         showDayAppointments(date.format('YYYY-MM-DD'));
-           /*  $('#modal_agenda #data').val(date.format());
-            $('#modal_agenda').modal('show'); */
+            showDayAppointments(date.format('YYYY-MM-DD'));
+            /*  $('#modal_agenda #data').val(date.format());
+             $('#modal_agenda').modal('show'); */
         },
         dayRender: function (date, cell) {
             // Verificar se o dia tem agendamentos
@@ -81,6 +81,19 @@ $(document).ready(function () {
 });
 
 function checkDayAppointments(date, cell) {
+    var today = moment().startOf('day');
+    var cellDate = moment(date).startOf('day');
+
+    // Pintar de cinza se a data já passou
+    if (cellDate.isBefore(today)) {
+        cell.css({
+            'background-color': '#f5f5f5',
+            'color': '#999',
+            'opacity': '0.6'
+        });
+        return; // Não verificar agendamentos para datas passadas
+    }
+
     $.ajax({
         url: '/bs/cliente/get-day-appointmentsCliente',
         type: 'POST',
@@ -89,16 +102,21 @@ function checkDayAppointments(date, cell) {
             selected_date: date.format('YYYY-MM-DD')
         },
         success: function (response) {
-      
             if (response.success && response.total > 0) {
-                // Pintar o dia com agendamentos
-                cell.css({
-                    'background-color': '#fcf8e3',
-                    'position': 'relative'
-                });
-
-                // Adicionar badge com número de agendamentos
-                cell.append('<span class="appointment-badge" > ' + response.total + '</span>');
+                if (cellDate.isBefore(today)) {
+                    cell.css({
+                        'background-color': '#f5f5f5',
+                        'color': '#999',
+                        'opacity': '0.6'
+                    });
+                    cell.append('<span class="appointment-badge" style="background-color:#3c3c3c" > ' + response.total + '</span>');
+                } else {
+                    cell.css({
+                        'background-color': '#6ee50230',
+                        'position': 'relative'
+                    });
+                    cell.append('<span class="appointment-badge" > ' + response.total + '</span>');
+                }
             }
         }
     });
@@ -112,7 +130,7 @@ function showDayAppointments(selectedDate) {
             _token: token,
             selected_date: selectedDate
         },
-        success: function(response) {
+        success: function (response) {
             var appointments = response.data;
             var modalContent = '<div class="modal fade" id="dayAppointmentsModal" tabindex="-1" role="dialog">';
             modalContent += '<div class="modal-dialog" role="document">';
@@ -122,14 +140,14 @@ function showDayAppointments(selectedDate) {
             modalContent += '<button type="button" class="close" data-dismiss="modal">&times;</button>';
             modalContent += '</div>';
             modalContent += '<div class="modal-body">';
-            
+
             if (appointments && appointments.length > 0) {
                 modalContent += '<div class="table-responsive">';
                 modalContent += '<table class="table table-striped">';
                 modalContent += '<thead><tr><th>Horário</th><th>Tipo</th><th>Status</th></tr></thead>';
                 modalContent += '<tbody>';
-                
-                appointments.forEach(function(appointment) {
+
+                appointments.forEach(function (appointment) {
 
                     modalContent += '<tr>';
                     modalContent += '<td>' + appointment.time + '</td>';
@@ -137,26 +155,26 @@ function showDayAppointments(selectedDate) {
                     modalContent += '<td><span class="label label-info">' + appointment.status + '</span></td>';
                     modalContent += '</tr>';
                 });
-                
+
                 modalContent += '</tbody></table></div>';
             } else {
                 modalContent += '<p class="text-center">Nenhum agendamento encontrado para este dia.</p>';
             }
-            
+
             modalContent += '</div>';
             modalContent += '<div class="modal-footer">';
             modalContent += '<button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>';
             modalContent += '</div>';
             modalContent += '</div></div></div>';
-            
+
             // Remover modal anterior se existir
             $('#dayAppointmentsModal').remove();
-            
+
             // Adicionar e mostrar novo modal
             $('body').append(modalContent);
             $('#dayAppointmentsModal').modal('show');
         },
-        error: function() {
+        error: function () {
             alert('Erro ao carregar agendamentos do dia.');
         }
     });
