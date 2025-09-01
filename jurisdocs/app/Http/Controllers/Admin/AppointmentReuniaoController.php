@@ -11,6 +11,7 @@ use App\Models\{Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
 use App\Helpers\LogActivity;
 use App\Http\Requests\StoreClient;
 use App\Notifications\ActivityNotification;
+use App\Services\ZoomService;
 use Illuminate\Support\Facades\Notification;
 use App\Traits\DatatablTrait;
 use Gate;
@@ -293,7 +294,7 @@ class AppointmentReuniaoController extends Controller
 
         $data['appointment'] = Agenda::join('agendamento_reuniaos AS a', 'a.agenda_id', '=', 'agenda.id')
             ->where('agenda.id', decrypt($id))
-            ->select('agenda.*', 'a.vc_entidade', 'a.vc_motivo', 'a.vc_pataforma', 'a.link_reuniao', 'a.vc_nota', 'a.it_termo')
+            ->select('agenda.*', 'a.vc_entidade', 'a.vc_motivo', 'a.vc_nota', 'a.it_termo')
             ->first();
         $data['client_list'] = $this->cliente->where('id',  $data['appointment']->cliente_id)->get();
 
@@ -302,24 +303,43 @@ class AppointmentReuniaoController extends Controller
 
     public function update(StoreAppointment $request, $id)
     {
+
         $agenda = Agenda::findOrFail($id);
-        $agenda->update([
-            'assunto' => addslashes($request->assunto),
+       Agenda::where('id', $id)->update([
+            'nome' => $request->vc_entidade,
             'telefone' => $request->mobile,
-            'data' => date('Y-m-d H:i', strtotime(LogActivity::commonDateFromat($request->date))),
+            'data' => date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->date))),
             'hora' => date('H:i:s', strtotime($request->time)),
-            'observacao' => $request->note,
+            'observacao' => $request->vc_nota,
+            'email' => $request->email,
+            'assunto' => "dd",
+            'vc_plataforma' => $request->vc_plataforma,
         ]);
+
+        if (empty($agenda->join_url)) {
+            if ($request->vc_plataforma == 'zoom') {
+                $zoom = new ZoomService();
+                $data = $zoom->createMeeting(
+                    $request->vc_tipo ?: 'reunião',
+                    "{$request->date}T{$request->time}:00",
+                    60
+                );
+               Agenda::where('id', $id)->update([
+                    'join_url' => $data['join_url'],
+                    'start_url' => $data['start_url'],
+                ]);
+
+            }
+        }
 
         AgendamentoReuniao::where('agenda_id', $id)->update([
             'vc_entidade' => $request->vc_entidade,
             'vc_motivo' => addslashes($request->vc_motivo),
-            'vc_pataforma' => $request->vc_plataforma,
-            'link_reuniao' => $request->vc_link_acesso,
             'vc_nota' => addslashes($request->vc_nota),
-            'it_termo' => $request->it_termo
+            'it_termo' => $request->it_termo ? 1 : 0
         ]);
-        return redirect()->route('reuniao.index')->with('success', "Agendamento de reuni達o atualizado.");
+
+        return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião atualizado.");
     }
 
     /**

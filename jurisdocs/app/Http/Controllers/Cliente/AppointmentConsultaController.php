@@ -86,8 +86,6 @@ class AppointmentConsultaController extends Controller
         $agendaReuniao = new AgendamentoConsulta();
         $agendaReuniao->vc_tipo = $request->vc_tipo;
         $agendaReuniao->vc_area = $request->vc_area ? $request->vc_area : $request->vc_area_outro;
-        $agendaReuniao->vc_pataforma = $request->vc_plataforma;
-        $agendaReuniao->link_reuniao = $request->vc_link_acesso;
         $agendaReuniao->vc_nota = addslashes($request->vc_nota);
         $agendaReuniao->agenda_id = $a->id;
         $agendaReuniao->it_termo = $request->it_termo;

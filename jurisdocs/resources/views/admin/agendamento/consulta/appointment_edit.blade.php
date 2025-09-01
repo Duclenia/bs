@@ -21,7 +21,7 @@
             <div class="x_panel">
                 <div class="x_content">
                     <form id="add_appointment" name="add_appointment" role="form" method="POST"
-                        action="{{ route('agenda.update', $appointment->id) }}">
+                        action="{{ route('consulta.update', $appointment->id) }}">
                         <input name="_method" type="hidden" value="PATCH">
                         {{ csrf_field() }}
                         <div class="row">
@@ -82,7 +82,17 @@
                                             autocomplete="off" value="{{ old('new_client', $appointment->nome ?? null) }}">
                                     </div>
                                 </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="mobile">Contacto telefónico (opcional)</label>
+                                    <input type="number" class="form-control" id="" name="mobile"
+                                        value="{{ old('telefone', $appointment->telefone ?? null) }}" autocomplete="off">
+                                </div>
 
+                                <div class="col-md-6 form-group">
+                                    <label for="email">Endereço de e-mail <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                        value="{{ old('email', $appointment->email ?? null) }}" autocomplete="off">
+                                </div>
                                 <div class="row">
                                     <div class="col-md-6 form-group">
                                         <label for="tipo_consulta">Tipo de Consulta <span
@@ -173,49 +183,41 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-4 form-group">
-                                        <label for="date">Data preferencial <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control" id="data" name="date"
-                                            value="{{ old('data', $appointment->data ?? null) }}" required>
+                                     <div class="col-md-4 form-group">
+                                        <label for="date">{{ __('Data Preferencial') }} <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" id="data" class="form-control" name="date"
+                                            value="{{ old('data' , $appointment->data ?? null) }}" required>
+
                                     </div>
 
                                     <div class="col-md-4 form-group">
-                                        <label for="time">Hora preferencial <span class="text-danger">*</span></label>
-                                        <input type="time" class="form-control" id="hora" name="time"
-                                            value="{{ old('time', $appointment->hora ?? null) }}" required>
+                                        <label for="time">{{ __('Horario Preferencial') }} <span
+                                                class="text-danger">*</span></label>
+                                        <select class="form-control" value="{{ old('time', $appointment->time ?? null) }}"name="time" id="hora" required></select>
+
                                     </div>
                                     <div class="col-md-4 form-group">
                                         <label for="vc_plataforma">Plataforma preferida <span
                                                 class="text-danger">*</span></label>
-                                        <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
+                                       <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
                                             <option value="">-- Selecionar --</option>
                                             <option value="Google Meet"
-                                                {{ old('vc_pataforma', $appointment->vc_pataforma ?? null) == 'Google Meet' ? 'selected' : '' }}>
+                                                {{ old('vc_plataforma', $appointment->vc_plataforma ?? null) == 'Google Meet' ? 'selected' : '' }}>
                                                 Google Meet
                                             </option>
-                                            <option value="Zoom"
-                                                {{ old('vc_pataforma', $appointment->vc_pataforma ?? null) == 'Zoom' ? 'selected' : '' }}>
+                                            <option value="zoom"
+                                                {{ old('vc_plataforma', $appointment->vc_plataforma ?? null) == 'Zoom' ? 'selected' : '' }}>
                                                 Zoom</option>
-                                            <option value="Teams"
-                                                {{ old('vc_pataforma', $appointment->vc_pataforma ?? null) == 'Teams' ? 'selected' : '' }}>
-                                                Teams</option>
+
                                             <option value="Chamada Telefónica"
-                                                {{ old('vc_pataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
+                                                {{ old('vc_plataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
                                                 Chamada Telefónica</option>
                                             <option value="Presencial"
-                                                {{ old('vc_pataforma') == 'Presencial' ? 'selected' : '' }}>Presencial
+                                                {{ old('vc_plataforma') == 'Presencial' ? 'selected' : '' }}>Presencial
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4 form-group" id="div_link_acesso">
-                                        <label for="vc_link_acesso">Link de Acesso</label>
-                                        <input type="text" class="form-control"
-                                            value="{{ old('link_reuniao', $appointment->link_reuniao ?? null) }}"
-                                            id="vc_link_acesso" name="vc_link_acesso" readonly>
-                                    </div>
-
-
-
                                 </div>
 
                                 <br>
@@ -285,4 +287,72 @@
     <script src="{{ asset('assets/admin/appointment/appointment.js') }}"></script>
     <script src="{{ asset('assets/js/appointment/appointment-validation_edit.js') }}"></script>
     <script src="{{ asset('assets/js/masked-input/masked-input.min.js') }}"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            let blockedDays = [];
+            let minDate = '';
+
+
+            // Carregar datas bloqueadas
+            $.get('/bs/admin/blocked-dates', function(response) {
+
+                blockedDays = response.blocked_days;
+                minDate = response.min_date;
+
+                flatpickr("#data, #data2", {
+                    dateFormat: "Y-m-d",
+                    minDate: minDate,
+                    disable: [
+                        function(date) {
+                            return blockedDays.includes(date.getDay());
+                        }
+                    ],
+                    locale: flatpickr.l10ns.pt,
+                    onChange: function(selectedDates, dateStr, instance) {
+                        // Disparar evento change para buscar horários
+                        $(instance.element).trigger('change');
+                    }
+                });
+            });
+            $(document).on('change', '#data, #data2', function() {
+                let date = $(this).val();
+                let horaSelect = $(this).attr('id') === 'data' ? '#hora' : '#hora2';
+                if (date) {
+                    $.ajax({
+                        url: `/bs/admin/available-times/${date}`,
+                        type: 'GET',
+                        success: function(response) {
+                            console.log('Resposta:', response);
+
+                            let options = '<option value="">Selecionar horário</option>';
+
+                            if (response.available_times && response.available_times.length >
+                                0) {
+                                response.available_times.forEach(time => {
+                                    options +=
+                                        `<option value="${time}">${time}</option>`;
+                                });
+                            } else {
+                                options +=
+                                    '<option value="">Nenhum horário disponível</option>';
+                            }
+
+                            $(horaSelect).html(options);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro ao buscar horários:', error);
+                            $(horaSelect).html(
+                                '<option value="">Erro ao carregar horários</option>');
+                        }
+                    });
+                } else {
+                    $(horaSelect).html('<option value="">Selecionar horário</option>');
+                }
+            });
+        });
+    </script>
 @endpush

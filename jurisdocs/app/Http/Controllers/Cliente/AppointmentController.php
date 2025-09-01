@@ -14,6 +14,7 @@ use App\Helpers\LogActivity;
 use App\Http\Controllers\Cliente\AppointmentConsultaController;
 use App\Http\Controllers\Cliente\AppointmentReuniaoController;
 use App\Notifications\ActivityNotification;
+use App\Services\ZoomService;
 use Illuminate\Support\Facades\Notification;
 use App\Traits\DatatablTrait;
 use Gate;
@@ -83,9 +84,9 @@ class AppointmentController extends Controller
         try {
             $cliente = auth()->user()->cliente;
 
-
             $agenda = new Agenda();
-            $agenda->cliente_id = $cliente->id;
+
+            $agenda->cliente_id =  $agenda->cliente_id = $cliente->id;
             $agenda->email = $request->email;
             $agenda->telefone = $request->mobile;
             $agenda->data = date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->date)));
@@ -93,6 +94,18 @@ class AppointmentController extends Controller
             $agenda->observacao = addslashes($request->vc_nota);
             $agenda->type = 'exists';
             $agenda->assunto = "dd";
+
+            if ($request->vc_plataforma == 'zoom') {
+                $zoom = new ZoomService();
+                $data = $zoom->createMeeting(
+                    $request->vc_tipo ?: 'reunião',
+                    "{$request->date}T{$request->time}:00",
+                    60
+                );
+                $agenda->vc_plataforma = $request->vc_plataforma;
+                $agenda->join_url = $data['join_url'];
+                $agenda->start_url = $data['start_url'];
+            }
             $agenda->save();
 
             if ($request->type_agenda == "reuniao") {
@@ -101,8 +114,6 @@ class AppointmentController extends Controller
                 $agendaReuniao->vc_entidade =  ($request->vc_entidade) ? $request->vc_entidade : $request->instituicao;
 
                 $agendaReuniao->vc_motivo = addslashes($request->vc_motivo);
-                $agendaReuniao->vc_pataforma = $request->vc_plataforma;
-                $agendaReuniao->link_reuniao = $request->vc_link_acesso;
                 $agendaReuniao->vc_nota = addslashes($request->vc_nota);
                 $agendaReuniao->agenda_id = $agenda->id;
                 $agendaReuniao->it_termo = $request->it_termo;
@@ -112,8 +123,6 @@ class AppointmentController extends Controller
                 $agendaconsulta = new AgendamentoConsulta();
                 $agendaconsulta->vc_tipo = $request->vc_tipo;
                 $agendaconsulta->vc_area = $request->vc_area ? $request->vc_area : $request->vc_area_outro;
-                $agendaconsulta->vc_pataforma = $request->vc_plataforma;
-                $agendaconsulta->link_reuniao = $request->vc_link_acesso;
                 $agendaconsulta->vc_nota = addslashes($request->vc_nota);
                 $agendaconsulta->agenda_id = $agenda->id;
                 $agendaconsulta->it_termo = $request->it_termo;

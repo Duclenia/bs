@@ -130,7 +130,7 @@
                                             <option value="Google Meet"
                                                 {{ old('vc_plataforma') == 'Google Meet' ? 'selected' : '' }}>Google Meet
                                             </option>
-                                            <option value="Zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>
+                                            <option value="zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>
                                                 Zoom</option>
 
                                             <option value="Chamada Telefónica"
@@ -277,7 +277,7 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            
+
             const checkbox = document.getElementById('it_termo');
             const btnSubmit = document.getElementById('btn_submit');
             const radioSim = document.getElementById('radio-sim');

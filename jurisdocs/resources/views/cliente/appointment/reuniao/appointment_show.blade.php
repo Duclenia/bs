@@ -35,29 +35,19 @@
                                             <th>Plataforma:</th>
                                             <td>{{ $appointment->vc_plataforma }}</td>
                                         </tr>
-                                         <tr>
-                                            <th>Link para juntar ao meeting :</th>
+                                        <tr>
+                                            <th>Link para o meeting :</th>
                                             <td>
 
                                                 @if ($appointment->join_url)
                                                     <a href="{{ $appointment->join_url }}"
-                                                        target="_blank">{{Str::limit($appointment->join_url , 45, '...') }}</a>
+                                                        target="_blank">{{ Str::limit($appointment->join_url, 45, '...') }}</a>
                                                 @else
                                                     -
                                                 @endif
                                             </td>
                                         </tr>
-                                        <tr>
-                                            <th>Link do meeting:</th>
-                                            <td>
-                                                @if ($appointment->start_url)
-                                                    <a href="{{ $appointment->start_url }}"
-                                                        target="_blank">{{ Str::limit($appointment->start_url, 45, '...') }}</a>
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                        </tr>
+
                                         <tr>
                                             <th>Nota:</th>
                                             <td>{{ $appointment->vc_nota ?? '-' }}</td>
@@ -107,7 +97,7 @@
                                 </table>
                             </div>
                         </div>
-<br><br>
+                        <br><br>
                         @if ($appointment->cliente_nome || $appointment->cliente_instituicao)
                             <div class="row">
                                 <div class="col-md-12">

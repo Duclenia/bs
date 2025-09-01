@@ -337,7 +337,7 @@ class AppointmentConsultaController extends Controller
 
         $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
             ->where('agenda.id', decrypt($id))
-            ->select('agenda.*', 'ac.vc_area as vc_area', 'ac.vc_tipo', 'ac.vc_pataforma', 'ac.link_reuniao', 'ac.vc_nota', 'ac.it_termo', 'ac.it_envDocs', 'ac.vc_caminho_documento')
+            ->select('agenda.*', 'ac.vc_area as vc_area', 'ac.vc_tipo', 'ac.vc_nota', 'ac.it_termo', 'ac.it_envDocs', 'ac.vc_caminho_documento')
             ->first();
         $data['client_list'] = $this->cliente->where('id',  $data['appointment']->cliente_id)->get();
 
@@ -355,26 +355,43 @@ class AppointmentConsultaController extends Controller
     {
 
         $agenda = Agenda::findOrFail($id);
-        $agenda->update([
-            'assunto' => addslashes($request->assunto),
+
+        Agenda::where('id', $id)->update([
+            'nome' => $request->vc_entidade,
             'telefone' => $request->mobile,
-            'data' => date('Y-m-d H:i', strtotime(LogActivity::commonDateFromat($request->date))),
+            'data' => date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->date))),
             'hora' => date('H:i:s', strtotime($request->time)),
-            'observacao' => $request->note,
+            'observacao' => $request->vc_nota,
+            'email' => $request->email,
+            'vc_plataforma' => $request->vc_plataforma,
         ]);
 
+        if (empty($agenda->join_url)) {
+
+            if ($request->vc_plataforma == 'zoom') {
+                $zoom = new ZoomService();
+                $data = $zoom->createMeeting(
+                    $request->vc_tipo ?: 'reunião',
+                    "{$request->date}T{$request->time}:00",
+                    60
+                );
+                Agenda::where('id', $id)->update([
+                    'join_url' => $data['join_url'],
+                    'start_url' => $data['start_url'],
+                ]);
+            }
+        }
         AgendamentoConsulta::where('agenda_id', $id)->update([
             'vc_tipo' => $request->vc_tipo,
             'vc_area' => addslashes($request->vc_area),
-            'vc_pataforma' => $request->vc_plataforma,
-            'link_reuniao' => $request->vc_link_acesso,
             'vc_nota' => addslashes($request->vc_nota),
             'it_termo' => $request->it_termo,
             'it_envDocs' => $request->it_envDocs,
             'vc_caminho_documento' => $request->vc_doc
         ]);
 
-        return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião atualizado.");
+
+        return redirect()->route('consulta.index')->with('success', "Agendamento de consulta atualizado.");
     }
 
     /**

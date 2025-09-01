@@ -44,7 +44,7 @@
 
                                     <div class="form-group col-md-6">
 
-                                        <input type="radio" id="test4"  name="type"
+                                        <input type="radio" id="test4" name="type"
                                             @if ($appointment->activo == 'OPEN') checked @endif>
 
                                         <b> Cliente existente </b>
@@ -114,17 +114,25 @@
 
                                 <div class="row">
                                     <div class="col-md-4 form-group">
-                                        <label for="data2">{{ __('Data Preferencial') }} <span
+                                        <label for="date">{{ __('Data Preferencial') }} <span
                                                 class="text-danger">*</span></label>
-                                        <input type="date" class="form-control" id="data2" name="data"
-                                            value="{{ old('date', $appointment->data ?? null) }}" required>
+                                        <input type="text" id="data" class="form-control" name="date"
+                                            value="{{ old('data', $appointment->data ?? null) }}" required>
+
                                     </div>
 
                                     <div class="col-md-4 form-group">
-                                        <label for="hora2">{{ __('Horario Preferencial') }} <span
+                                        <label for="time">{{ __('Horario Preferencial') }} <span
                                                 class="text-danger">*</span></label>
-                                        <input type="time" class="form-control" id="hora2" name="hora"
-                                            value="{{ old('hora', $appointment->hora ?? null) }}" required>
+                                        <select class="form-control" name="time" id="hora" required>
+                                            @if ($appointment->hora)
+                                                <option value="{{ $appointment->hora }}" selected>
+                                                    {{ date('H:i', strtotime($appointment->hora)) }}
+                                                </option>
+                                            @else
+                                                <option value="">Selecionar horário</option>
+                                            @endif
+                                        </select>
                                     </div>
                                     <div class="col-md-4 form-group">
                                         <label for="vc_plataforma">Plataforma preferida <span
@@ -132,29 +140,21 @@
                                         <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
                                             <option value="">-- Selecionar --</option>
                                             <option value="Google Meet"
-                                                {{ old('vc_plataforma', $appointment->vc_pataforma ?? null) == 'Google Meet' ? 'selected' : '' }}>
+                                                {{ old('vc_plataforma', $appointment->vc_plataforma ?? null) == 'Google Meet' ? 'selected' : '' }}>
                                                 Google Meet
                                             </option>
-                                            <option value="Zoom"
-                                                {{ old('vc_plataforma', $appointment->vc_pataforma ?? null) == 'Zoom' ? 'selected' : '' }}>
+                                            <option value="zoom"
+                                                {{ old('vc_plataforma', $appointment->vc_plataforma ?? null) == 'Zoom' ? 'selected' : '' }}>
                                                 Zoom</option>
-                                         
+
                                             <option value="Chamada Telefónica"
-                                                {{ old('vc_plataforma', $appointment->vc_pataforma ?? null) == 'Chamada Telefónica' ? 'selected' : '' }}>
+                                                {{ old('vc_plataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
                                                 Chamada Telefónica</option>
                                             <option value="Presencial"
-                                                {{ old('vc_plataforma', $appointment->vc_pataforma ?? null) == 'Presencial' ? 'selected' : '' }}>
-                                                Presencial
+                                                {{ old('vc_plataforma') == 'Presencial' ? 'selected' : '' }}>Presencial
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4 form-group" id="div_link_acesso">
-                                        <label for="vc_link_acesso">Link de Acesso</label>
-                                        <input type="text" class="form-control" id="vc_link_acesso"
-                                            value="{{ old('link_reuniao', $appointment->link_reuniao ?? null) }}"
-                                            name="vc_link_acesso" readonly>
-                                    </div>
-
 
                                 </div>
 
@@ -214,4 +214,72 @@
     <script src="{{ asset('assets/admin/appointment/appointment.js') }}"></script>
     <script src="{{ asset('assets/js/appointment/appointment-validation_edit.js') }}"></script>
     <script src="{{ asset('assets/js/masked-input/masked-input.min.js') }}"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            let blockedDays = [];
+            let minDate = '';
+
+
+            // Carregar datas bloqueadas
+            $.get('/bs/admin/blocked-dates', function(response) {
+
+                blockedDays = response.blocked_days;
+                minDate = response.min_date;
+
+                flatpickr("#data, #data2", {
+                    dateFormat: "Y-m-d",
+                    minDate: minDate,
+                    disable: [
+                        function(date) {
+                            return blockedDays.includes(date.getDay());
+                        }
+                    ],
+                    locale: flatpickr.l10ns.pt,
+                    onChange: function(selectedDates, dateStr, instance) {
+                        // Disparar evento change para buscar horários
+                        $(instance.element).trigger('change');
+                    }
+                });
+            });
+            $(document).on('change', '#data, #data2', function() {
+                let date = $(this).val();
+                let horaSelect = $(this).attr('id') === 'data' ? '#hora' : '#hora2';
+                if (date) {
+                    $.ajax({
+                        url: `/bs/admin/available-times/${date}`,
+                        type: 'GET',
+                        success: function(response) {
+                            console.log('Resposta:', response);
+
+                            let options = '<option value="">Selecionar horário</option>';
+
+                            if (response.available_times && response.available_times.length >
+                                0) {
+                                response.available_times.forEach(time => {
+                                    options +=
+                                        `<option value="${time}">${time}</option>`;
+                                });
+                            } else {
+                                options +=
+                                    '<option value="">Nenhum horário disponível</option>';
+                            }
+
+                            $(horaSelect).html(options);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro ao buscar horários:', error);
+                            $(horaSelect).html(
+                                '<option value="">Erro ao carregar horários</option>');
+                        }
+                    });
+                } else {
+                    $(horaSelect).html('<option value="">Selecionar horário</option>');
+                }
+            });
+        });
+    </script>
 @endpush
