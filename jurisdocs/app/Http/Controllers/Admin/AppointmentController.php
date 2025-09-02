@@ -136,6 +136,7 @@ class AppointmentController extends Controller
         $agenda->observacao = addslashes($request->vc_nota);
         $agenda->type = $request->type;
         $agenda->assunto = "dd";
+         $agenda->vc_plataforma = $request->vc_plataforma;
 
         if ($request->vc_plataforma == 'zoom') {
             $zoom = new ZoomService();
@@ -144,10 +145,19 @@ class AppointmentController extends Controller
                 "{$request->date}T{$request->time}:00",
                 60
             );
-            $agenda->vc_plataforma = $request->vc_plataforma;
+   
             $agenda->join_url = $data['join_url'];
             $agenda->start_url = $data['start_url'];
         }
+         /* if ($request->vc_plataforma == 'meet') {
+            $meet = new GoogleMeetService();
+            $link = $meet->createMeeting("Minha reunião no Google Meet");
+            $meeting = Meeting::create([
+                'platform' => 'meet',
+                'meeting_id' => null,
+                'join_url' => $link,
+            ]);
+        } */
 
         $agenda->save();
 

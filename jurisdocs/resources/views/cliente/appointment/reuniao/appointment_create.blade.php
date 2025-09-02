@@ -77,10 +77,7 @@
                                             class="text-danger">*</span></label>
                                     <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
                                         <option value="">-- Selecionar --</option>
-                                        <option value="Google Meet"
-                                            {{ old('vc_plataforma') == 'Google Meet' ? 'selected' : '' }}>Google
-                                            Meet
-                                        </option>
+                                        
                                         <option value="zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom
                                         </option>
 

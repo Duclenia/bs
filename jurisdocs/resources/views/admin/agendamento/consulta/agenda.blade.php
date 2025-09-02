@@ -69,10 +69,9 @@
             <label for="vc_plataforma">Plataforma preferida <span class="text-danger">*</span></label>
             <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
                 <option value="">-- Selecionar --</option>
-                <option value="Google Meet" {{ old('vc_plataforma') == 'Google Meet' ? 'selected' : '' }}>Google Meet
-                </option>
-                <option value="Zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom</option>
                 
+                <option value="Zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom</option>
+
                 <option value="Chamada Telefónica" {{ old('vc_plataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
                     Chamada Telefónica</option>
                 <option value="Presencial" {{ old('vc_plataforma') == 'Presencial' ? 'selected' : '' }}>Presencial

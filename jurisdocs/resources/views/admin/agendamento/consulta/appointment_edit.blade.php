@@ -202,12 +202,9 @@
                                                 class="text-danger">*</span></label>
                                        <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
                                             <option value="">-- Selecionar --</option>
-                                            <option value="Google Meet"
-                                                {{ old('vc_plataforma', $appointment->vc_plataforma ?? null) == 'Google Meet' ? 'selected' : '' }}>
-                                                Google Meet
-                                            </option>
+
                                             <option value="zoom"
-                                                {{ old('vc_plataforma', $appointment->vc_plataforma ?? null) == 'Zoom' ? 'selected' : '' }}>
+                                                {{ old('vc_plataforma', $appointment->vc_plataforma ?? null) == 'zoom' ? 'selected' : '' }}>
                                                 Zoom</option>
 
                                             <option value="Chamada Telefónica"
