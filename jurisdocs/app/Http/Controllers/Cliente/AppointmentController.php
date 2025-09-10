@@ -93,7 +93,7 @@ class AppointmentController extends Controller
             $agenda->hora = date('H:i:s', strtotime($request->time));
             $agenda->observacao = addslashes($request->vc_nota);
             $agenda->type = 'exists';
-            $agenda->assunto = "dd";
+            $agenda->advogado_id = $request->advogado_id;
 
             if ($request->vc_plataforma == 'zoom') {
                 $zoom = new ZoomService();

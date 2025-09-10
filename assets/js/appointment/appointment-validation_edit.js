@@ -27,7 +27,7 @@ jQuery(document).ready(function () {
     $('#time').datetimepicker({
         format: 'hh:mm A'
     });
-    
+
     $("#mobile").mask("999 999 999");
 
     $('#exists_client').select2({
@@ -35,6 +35,9 @@ jQuery(document).ready(function () {
         language: "pt",
     });
 
+     $('#select_advogado').select2({
+        placeholder: 'Seleccionar Advogado',
+    });
 
     $('input[type=radio][name=type]').on('change', function () {
 
@@ -45,6 +48,10 @@ jQuery(document).ready(function () {
 
             $("#exists_client").val('').select2({
                 placeholder: 'Seleccionar cliente',
+                language: "pt",
+            });
+            $('#select_advogado').val('').select2({
+                placeholder: 'Seleccionar Advogado',
                 language: "pt",
             });
 
@@ -61,12 +68,12 @@ jQuery(document).ready(function () {
 });
 
 
-if(type_chk=='exists'){
+if (type_chk == 'exists') {
     $('.exists').removeClass("hidden");
     $('.new').addClass("hidden");
 }
 
-if(type_chk=='new'){
+if (type_chk == 'new') {
     $('.exists').addClass("hidden");
     $('.new').removeClass("hidden");
 }
@@ -81,7 +88,7 @@ function getMobileno(id) {
         $.ajax({
             url: getMobilenos,
             method: "POST",
-            data: {id: id},
+            data: { id: id },
             success: function (data) {
 
                 $('#mobile').val(data.telefone).prop('readonly', true);

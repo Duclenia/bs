@@ -18,19 +18,8 @@ use App\Helpers\LogActivity;
 class DashBordController extends Controller
 {
 
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct() {}
 
-
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function getcases($court, $judge_type, $startDate, $endDate)
     {
         // $advocate_id = $this->getLoginUserId();
@@ -251,8 +240,23 @@ class DashBordController extends Controller
 
         $getAppointment = DB::table('agenda AS a')
             ->leftJoin('cliente AS c', 'c.id', '=', 'a.cliente_id')
-            ->select('a.id AS id', 'a.activo AS status', 'a.data AS data', 'c.nome AS nome', 'a.nome AS appointment_name', 'c.nome AS first_name', 'c.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
-            ->where('a.activo', 'OPEN')
+            ->leftjoin('admin AS adm', 'adm.user_id', '=', 'a.advogado_id')
+            ->leftjoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
+
+            ->select(
+                'ps.nome AS advogado_nome',
+                'ps.sobrenome AS advogado_sobrenome',
+                'a.id AS id',
+                'a.activo AS status',
+                'a.data AS data',
+                'c.nome AS nome',
+                'a.nome AS appointment_name',
+                'c.nome AS first_name',
+                'c.sobrenome AS last_name',
+                'a.cliente_id AS client_id',
+                'a.type As type'
+            )
+            ->where('a.activo', ['OPEN', 'TO FORWARD'])
             ->where('a.data', date('Y-m-d'))
             ->get();
         $data['appoint_calander'] = $getAppointment;
@@ -476,56 +480,27 @@ class DashBordController extends Controller
         return $pdf->stream();
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         //
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function update(Request $request, $id)
     {
         //
@@ -552,7 +527,8 @@ class DashBordController extends Controller
 
         $totalData = DB::table('agenda AS a')
             ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
-            ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'ac.nome AS name', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+            ->leftjoin('admin AS adm', 'adm.user_id', '=', 'a.advogado_id')
+            ->leftjoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
             ->whereDate('data', $date)
             ->count();
         $totalRec = $totalData;
@@ -566,7 +542,25 @@ class DashBordController extends Controller
         $search = $request->input('search.value');
         $terms = DB::table('agenda AS a')
             ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
-            ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.hora AS app_time', 'ac.nome AS name', 'ac.instituicao', 'a.nome AS appointment_name', 'ac.nome AS first_name', 'ac.sobrenome AS last_name', 'a.cliente_id AS client_id', 'a.type As type')
+            ->leftjoin('admin AS adm', 'adm.user_id', '=', 'a.advogado_id')
+            ->leftjoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
+
+            ->select(
+                'ps.nome AS advogado_nome',
+                'ps.sobrenome AS advogado_sobrenome',
+                'a.id AS id',
+                'a.activo AS status',
+                'a.telefone AS mobile',
+                'a.data AS date',
+                'a.hora AS app_time',
+                'ac.nome AS name',
+                'ac.instituicao',
+                'a.nome AS appointment_name',
+                'ac.nome AS first_name',
+                'ac.sobrenome AS last_name',
+                'a.cliente_id AS client_id',
+                'a.type As type'
+            )
             ->whereDate('data', $date)
             ->where(function ($query) use ($search) {
                 return $query->where('a.telefone', 'LIKE', "%{$search}%")
@@ -593,7 +587,7 @@ class DashBordController extends Controller
                 $nestedData['id'] = $term->id;
                 $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
                 $nestedData['time'] = date('g:i a', strtotime($term->app_time));
-                $nestedData['mobile'] = $term->mobile;
+                $nestedData['advogado'] = $term->advogado_nome . ' ' . $term->advogado_sobrenome;
                 if ($term->type == "new") {
                     $nestedData['name'] = ($term->instituicao) ? $term->instituicao : $term->name . ' ' . $term->last_name;
                 } else {
@@ -619,8 +613,13 @@ class DashBordController extends Controller
 
         $appointments = DB::table('agenda AS a')
             ->leftJoin('cliente AS ac', 'ac.id', '=', 'a.cliente_id')
+            ->leftjoin('admin AS adm', 'adm.user_id', '=', 'a.advogado_id')
+            ->leftjoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
+
             ->select(
                 'a.id',
+                'ps.nome AS advogado_nome',
+                'ps.sobrenome AS advogado_sobrenome',
                 'a.telefone AS mobile',
                 'a.hora AS app_time',
                 'ac.nome AS first_name',
@@ -630,7 +629,7 @@ class DashBordController extends Controller
                 'a.type'
             )
             ->whereDate('a.data', $date)
-            ->where('a.activo', 'OPEN')
+            ->where('a.activo', ['OPEN', 'TO FORWARD'])
             ->orderBy('a.hora', 'asc')
             ->get();
 
@@ -646,6 +645,7 @@ class DashBordController extends Controller
             $data[] = [
                 'id' => $appointment->id,
                 'name' => $clientName,
+                'advogado' => $appointment->advogado_nome . ' ' . $appointment->advogado_sobrenome,
                 'time' => date('H:i', strtotime($appointment->app_time)),
                 'mobile' => $appointment->mobile
             ];
@@ -658,12 +658,7 @@ class DashBordController extends Controller
         ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy($id)
     {
         //

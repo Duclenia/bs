@@ -1,4 +1,32 @@
 <div class="row">
+    <div class="col-md-6">
+        <div class="form-group">
+            @if (!empty($advogado_list) && count($advogado_list) > 0)
+                <label class="discount_text">Seleccionar o Advogado
+                    <er class="rest">*</er>
+                </label>
+                <select class="form-control selct2-width-100" name="advogado_id" id="select_advogado_exist">
+                    <option value="">Seleccionar Advogado</option>
+                    @foreach ($advogado_list as $list)
+                        <option value="{{ $list->id }}">
+                            {{ str_pad($list->id, 5, '0', STR_PAD_LEFT) . ' - ' . $list->nome . ' ' . $list->sobrenome }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
+        </div>
+    </div>
+    @if (auth()->user()->user_type === 'SuperAdmin')
+        <div class="col-md-6 form-group">
+            <label for="custo">Custo da Reunião *</label>
+            <input type="number" class="form-control" id="custo" name="custo" step="0.01" min="0"
+                value="{{ old('custo') }}" placeholder="0.00">
+
+        </div>
+    @endif
+</div>
+
+<div class="row">
     <div class="col-md-12 form-group">
         <label for="vc_motivo">Motivo da reunião <span class="text-danger">*</span></label>
         <textarea class="form-control" id="vc_motivo" name="vc_motivo" rows="3" required>{{ old('vc_motivo') }}</textarea>
@@ -19,8 +47,8 @@
         <label for="vc_plataforma">Plataforma preferida <span class="text-danger">*</span></label>
         <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
             <option value="">-- Selecionar --</option>
-        
-            <option value="Zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom</option>
+
+            <option value="zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom</option>
 
             <option value="Chamada Telefónica" {{ old('vc_plataforma') == 'Chamada Telefónica' ? 'selected' : '' }}>
                 Chamada Telefónica</option>
@@ -30,6 +58,8 @@
 
 
 </div>
+
+
 
 <div class="row">
     <div class="col-md-12 form-group">

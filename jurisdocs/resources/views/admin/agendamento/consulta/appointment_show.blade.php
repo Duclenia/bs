@@ -41,7 +41,7 @@
 
                                                 @if ($appointment->join_url)
                                                     <a href="{{ $appointment->join_url }}"
-                                                        target="_blank">{{Str::limit($appointment->join_url , 45, '...') }}</a>
+                                                        target="_blank">{{ Str::limit($appointment->join_url, 45, '...') }}</a>
                                                 @else
                                                     -
                                                 @endif
@@ -110,6 +110,10 @@
                                                     <span class="badge badge-warning">Cancelado pelo cliente</span>
                                                 @elseif($appointment->activo == 'CANCEL BY ADVOCA')
                                                     <span class="badge badge-danger">Cancelado pelo advogado</span>
+                                                @elseif($appointment->activo == 'TO FORWARD')
+                                                    <span class="badge badge-danger">Encaminhado para o advogado</span>
+                                                @elseif($appointment->activo == 'PENDING')
+                                                    <span class="badge badge-danger">Pendente</span>
                                                 @endif
                                             </td>
                                         </tr>
@@ -117,6 +121,31 @@
                                             <th>Observação:</th>
                                             <td>{{ $appointment->observacao ?? '-' }}</td>
                                         </tr>
+                                        @if ($appointment->advogado_nome)
+                                            <tr>
+                                                <th>Advogado:</th>
+                                                <td>{{ $appointment->advogado_nome }}
+                                                    {{ $appointment->advogado_sobrenome }}</td>
+                                            </tr>
+                                        @endif
+
+                                        <tr>
+                                            <th>Custo total:</th>
+                                            <td>{{ $appointment->custo ?? '-' }}</td>
+                                        </tr>
+                                        @if ($appointment->vc_caminho_pdf)
+                                            <br><br>
+                                            <tr>
+                                                <th>Comprovativo:</th>
+                                                <td>
+
+                                                    <a href="{{ url('jurisdocs/storage/app/public/' . $appointment->vc_caminho_pdf) }}"
+                                                        target="_blank" class="btn btn-sm btn-success">
+                                                        <i class="fa fa-file-pdf-o"></i> Ver Comprovativo
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        @endif
                                     </tbody>
                                 </table>
                             </div>

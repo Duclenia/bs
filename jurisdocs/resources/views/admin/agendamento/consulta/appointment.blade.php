@@ -28,7 +28,6 @@
 
                                 <input type="text" class="form-control dateFrom" id="date_from" autocomplete="off"
                                     readonly="">
-
                             </div>
 
                             <div class="col-md-3 form-group">
@@ -61,7 +60,7 @@
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th width="30%">{{ __('Client Name') }}</th>
+                                    <th>{{ __('Client Name') }}</th>
                                     <th width="10%">Telefone</th>
                                     <th width="20%">Area de Consulta</th>
                                     <th width="10%">{{ __('Date') }}</th>
@@ -78,6 +77,85 @@
 
     </div>
 
+    <!-- Modal para Encaminhar Advogado -->
+    <div class="modal fade" id="forwardModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Encaminhar para Outro Advogado</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="forwardForm">
+                        <input type="hidden" id="consultaId" name="agendamento_id">
+
+                        <div class="form-group">
+                            <label>Selecionar Advogado <span class="text-danger">*</span></label>
+                            <select class="form-control" id="novoAdvogado" name="novo_advogado_id" required>
+                                <option value="">Selecionar Advogado</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Nova Data <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="novaData" name="nova_data" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Novo Horário <span class="text-danger">*</span></label>
+                            <select class="form-control" id="novoHorario" name="novo_horario" required>
+                                <option value="">Selecionar horário</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Motivo do Encaminhamento</label>
+                            <textarea class="form-control" name="motivo" rows="3" placeholder="Descreva o motivo do encaminhamento..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmarEncaminhamento">Confirmar
+                        Encaminhamento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Upload de Comprovativo -->
+    <div class="modal fade" id="uploadModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload de Comprovativo</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="hidden" id="uploadConsultaId" name="consulta_id">
+
+                        <div class="form-group">
+                            <label>Comprovativo (PDF) <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="comprovativo" name="comprovativo"
+                                accept=".pdf" required>
+                            <small class="text-muted">Apenas arquivos PDF são aceitos (máx. 10MB)</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="btnUploadComprovativo">Enviar
+                        Comprovativo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <input type="hidden" name="token-value" id="token-value" value="{{ csrf_token() }}">
     <input type="hidden" name="date_format_datepiker" id="date_format_datepiker" value="{{ $date_format_datepiker }}">
     <input type="hidden" name="common_change_state" id="common_change_state" value="{{ url('common_change_state') }}">
@@ -85,6 +163,23 @@
 @endsection
 
 @push('js')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+
     <script src="{{ asset('assets/admin/jquery-confirm-master/js/jquery-confirm.js') }}"></script>
     <script src="{{ asset('assets/js/appointment/appointmentConsulta-datatable.js') }}"></script>
+
+    <script>
+        window.routes = {
+            getAdvogados: '{{ route('consulta.getAdvogados') }}',
+            blockedDates: '{{ route('horario_advogado.blockedDates', '') }}',
+            availableTimes: '{{ route('horario_advogado.availableTimesByAdvogado', ['advogado_id' => '__ADVOGADO__', 'date' => '__DATA__']) }}',
+            encaminhar: '{{ route('agenda.encaminhar') }}',
+            uploadComprovativo: '{{ route('agenda.uploadComprovativo') }}'
+        };
+    </script>
+
+    <script src="{{ asset('assets/js/appointment/forward-lawyer.js') }}"></script>
+    <script src="{{ asset('assets/js/appointment/upload-Payment.js') }}"></script>
 @endpush

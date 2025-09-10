@@ -244,8 +244,22 @@ Route::group(['prefix' => 'admin', 'namespace' => 'Admin', 'middleware' => ['aut
     Route::resource('horario', 'HorarioController');
     Route::post('horario/get-by-day', 'HorarioController@getByDay')->name('horario.getByDay');
     Route::get('available-times/{date}', 'HorarioController@getAvailableTimes')->name('horario.availableTimes');
-    Route::get('blocked-dates', 'HorarioController@getBlockedDates')->name('horario.blockedDates');
+    Route::get('blocked-dates-advogados', 'HorarioController@getBlockedDates')->name('horario.blockedDates');
     Route::get('/available-times/{date}', 'HorarioController@getAvailableTimes')->name('horario.getAvailable');
+
+    //horario advogado
+    Route::get('horario-advogado/create/{advogado_id}', 'HorarioAdvogadoController@create')->name('horario-advogado.create');
+    Route::resource('horario-advogado', 'HorarioAdvogadoController')->except(['create']);
+    Route::post('horario-advogado/get-by-day', 'HorarioAdvogadoController@getByDay')->name('horario_advogado.getByDay');
+    Route::get('available-times/{date}', 'HorarioAdvogadoController@getAvailableTimes')->name('horario_advogado.availableTimes');
+    Route::get('blocked-dates/{id?}', 'HorarioAdvogadoController@getBlockedDates')->name('horario_advogado.blockedDates');
+    Route::get('/available-times/{date}', 'HorarioAdvogadoController@getAvailableTimes')->name('horario_advogado.getAvailable');
+    Route::get('available-times-advogado/{advogado_id}/{date}', 'HorarioAdvogadoController@getAvailableTimesByAdvogado')->name('horario_advogado.availableTimesByAdvogado');
+    Route::get('get-advogados', 'AppointmentConsultaController@getAdvogados')->name('consulta.getAdvogados');
+
+
+    Route::post('encaminhar-agenda', 'AppointmentController@encaminharAgendamento')->name('agenda.encaminhar');
+    Route::post('upload-comprovativo-agenda', 'AppointmentController@uploadComprovativo')->name('agenda.uploadComprovativo');
 
     //configuração de horario
     Route::resource('horario', 'HorarioController');

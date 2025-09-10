@@ -3,17 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\AgendamentoConsulta;
-use App\AgendamentoReuniao;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreAppointment;
 use App\Http\Controllers\Controller;
-use App\Models\{Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
+use App\Models\{User, Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
 use App\Helpers\LogActivity;
-use App\Http\Requests\StoreClient;
-use App\Notifications\ActivityNotification;
 use App\Services\ZoomService;
-use Illuminate\Support\Facades\Notification;
 use App\Traits\DatatablTrait;
+
 use Gate;
 use DB;
 
@@ -32,11 +29,6 @@ class AppointmentConsultaController extends Controller
         $this->clienteAgenda = $client;
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
         if (Gate::denies('appointment_list'))
@@ -46,14 +38,6 @@ class AppointmentConsultaController extends Controller
         return view('admin.agendamento.consulta.appointment');
     }
 
-
-
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         if (Gate::denies('appointment_add'))
@@ -64,6 +48,12 @@ class AppointmentConsultaController extends Controller
         $data['state'] = Provincia::all();
         $data['tipospessoas'] = TipoPessoa::all();
         $data['tiposdocumentos'] = TipoDocumento::all();
+        $data['advogado_list'] = DB::table('admin AS a')
+            ->leftJoin('users AS u', 'a.user_id', '=', 'u.id')
+            ->leftJoin('pessoasingular AS p', 'p.id', '=', 'a.pessoasingular_id')
+            ->where('user_type', 'ADV')
+            ->select('u.*', 'p.nome as nome', 'p.sobrenome as sobrenome')
+            ->get();
 
         return view('admin.agendamento.consulta.appointment_create', $data);
     }
@@ -75,20 +65,18 @@ class AppointmentConsultaController extends Controller
         return $data;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \App\Http\Requests\StoreAppointment $request
-     * @return \Illuminate\Http\Response
-     */
-
-
-
-
     public function store(Agenda $a, StoreAppointment $request)
     {
+        $documentPath = null;
 
-        $meeting = null;
+        // Upload do documento se fornecido
+        if ($request->hasFile('vc_doc')) {
+            $file = $request->file('vc_doc');
+            if ($file->getClientOriginalExtension() === 'pdf') {
+                $documentPath = $file->store('consultas/documentos', 'public');
+            }
+        }
+
         $agendaReuniao = new AgendamentoConsulta();
         $agendaReuniao->vc_tipo = $request->vc_tipo;
         $agendaReuniao->vc_area = $request->vc_area ? $request->vc_area : $request->vc_area_outro;
@@ -96,7 +84,7 @@ class AppointmentConsultaController extends Controller
         $agendaReuniao->agenda_id = $a->id;
         $agendaReuniao->it_termo = $request->it_termo;
         $agendaReuniao->it_envDocs = $request->it_envDocs ? $request->it_envDocs : 0;
-        $agendaReuniao->vc_caminho_documento = $request->vc_doc;
+        $agendaReuniao->vc_caminho_documento = $documentPath;
         $agendaReuniao->save();
 
         return redirect()->route('consulta.index')->with('success', "Agendamento de consulta criado.");
@@ -109,9 +97,12 @@ class AppointmentConsultaController extends Controller
 
         $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'agenda.cliente_id')
+            ->leftJoin('admin AS adm', 'adm.user_id', '=', 'agenda.advogado_id')
+            ->leftJoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
             ->where('agenda.id', decrypt($id))
-            ->select('agenda.*', 'ac.*', 'cl.nome as cliente_nome', 'cl.sobrenome as cliente_sobrenome', 'cl.instituicao as cliente_instituicao')
+            ->select('agenda.*', 'ac.*', 'cl.nome as cliente_nome', 'cl.sobrenome as cliente_sobrenome', 'cl.instituicao as cliente_instituicao', 'ps.nome as advogado_nome', 'ps.sobrenome as advogado_sobrenome', 'agenda.vc_caminho_pdf')
             ->first();
+
         return view('admin.agendamento.consulta.appointment_show', $data);
     }
 
@@ -121,11 +112,6 @@ class AppointmentConsultaController extends Controller
         $user = auth()->user();
         $isEdit = $user->can('appointment_edit');
 
-        /*
-          |----------------
-          | Listing colomns
-          |----------------
-         */
         $columns = array(
             0 => 'id',
             1 => 'name',
@@ -175,18 +161,6 @@ class AppointmentConsultaController extends Controller
             ->limit($limit)
             ->orderBy($order, $dir)
             ->get();
-
-        /*
-          |--------------------------------------------
-          | For table search filter from frontend site inside two table namely courses and courseterms.
-          |--------------------------------------------
-         */
-
-        /*
-          |----------------------------------------------------------------------------------------------------------------------------------
-          | Creating json array with all records based on input from front end site like all,searcheded,pagination record (i.e 10,20,50,100).
-          |----------------------------------------------------------------------------------------------------------------------------------
-         */
 
         $totalFiltered = DB::table('agenda AS a')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
@@ -247,13 +221,18 @@ class AppointmentConsultaController extends Controller
                 }
                 $con .= ">Aberto</option>";
 
-                //for CANCEL BY CLIENT status
+                $con .= "<option value='PENDING'";
+                if ($term->status == 'PENDING') {
+                    $con .= "selected";
+                }
+                $con .= ">Pendente</option>";
 
                 $con .= "<option value='CANCEL BY CLIENT'";
                 if ($term->status == 'CANCEL BY CLIENT') {
                     $con .= "selected";
                 }
-                $con .= ">Cancelado pelo cliente</option>";
+                $con .= ">Remarcado pelo cliente</option>";
+
 
 
                 //for CANCEL BY ADVOCATE status
@@ -261,13 +240,19 @@ class AppointmentConsultaController extends Controller
                 if ($term->status == 'CANCEL BY ADVOCA') {
                     $con .= "selected";
                 }
-                $con .= ">Cancelado pelo advogado(a)</option>";
+                $con .= ">Remarcado pelo advogado(a)</option>";
 
                 $con .= "<option value='SERVED'";
                 if ($term->status == 'SERVED') {
                     $con .= "selected";
                 }
                 $con .= ">Cliente Atendido(a)</option>";
+
+                $con .= "<option value='TO FORWARD'";
+                if ($term->status == 'TO FORWARD') {
+                    $con .= "selected";
+                }
+                $con .= ">Encaminhar para outro advogado</option>";
 
 
                 $con .= "</select>";
@@ -302,10 +287,12 @@ class AppointmentConsultaController extends Controller
                         'view' => route('consulta.show', encrypt($term->id)),
                         'edit' => route('consulta.edit', encrypt($term->id)),
                         'edit_permission' => $isEdit,
+                        'upload_comprovativo' => collect(['id' => $term->id])
                     ]);
                 } else {
                     $nestedData['action'] = $this->action([
                         'view' => route('consulta.show', encrypt($term->id)),
+                        'upload_comprovativo' => collect(['id' => $term->id])
                     ]);
                 }
 
@@ -381,24 +368,45 @@ class AppointmentConsultaController extends Controller
                 ]);
             }
         }
-        AgendamentoConsulta::where('agenda_id', $id)->update([
+        $documentPath = null;
+
+        // Upload do novo documento se fornecido
+        if ($request->hasFile('vc_doc')) {
+            $file = $request->file('vc_doc');
+            if ($file->getClientOriginalExtension() === 'pdf') {
+                $documentPath = $file->store('consultas/documentos', 'public');
+            }
+        }
+
+        $updateData = [
             'vc_tipo' => $request->vc_tipo,
             'vc_area' => addslashes($request->vc_area),
             'vc_nota' => addslashes($request->vc_nota),
             'it_termo' => $request->it_termo,
             'it_envDocs' => $request->it_envDocs,
-            'vc_caminho_documento' => $request->vc_doc
-        ]);
+        ];
+
+        if ($documentPath) {
+            $updateData['vc_caminho_documento'] = $documentPath;
+        }
+
+        AgendamentoConsulta::where('agenda_id', $id)->update($updateData);
 
 
         return redirect()->route('consulta.index')->with('success', "Agendamento de consulta atualizado.");
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id) {}
+
+    public function getAdvogados()
+    {
+        $advogados = DB::table('admin AS a')
+            ->leftJoin('users AS u', 'a.user_id', '=', 'u.id')
+            ->leftJoin('pessoasingular AS p', 'p.id', '=', 'a.pessoasingular_id')
+            ->where('user_type', 'ADV')
+            ->select('u.id', 'p.nome', 'p.sobrenome')
+            ->get();
+
+        return response()->json($advogados);
+    }
 }

@@ -1,23 +1,22 @@
-<div class="row">
-    <div class="col-md-12">
-        <div class="form-group">
-            @if (!empty($client_list) && count($client_list) > 0)
-                <label class="discount_text">Seleccionar cliente
-                    <er class="rest">*</er>
-                </label>
-                <select class="form-control selct2-width-100" name="exists_client" id="exists_client"
-                    onchange="getMobileno(this.value);">
-                    <option value="">Seleccionar cliente</option>
-                    @foreach ($client_list as $list)
-                        <option value="{{ $list->id }}">
-                            {{ str_pad($list->id, 5, '0', STR_PAD_LEFT) . ' - ' . $list->full_name }}
-                        </option>
-                    @endforeach
-                </select>
-            @endif
-        </div>
+<div class="col-md-12">
+    <div class="form-group">
+        @if (!empty($client_list) && count($client_list) > 0)
+            <label class="discount_text">Seleccionar cliente
+                <er class="rest">*</er>
+            </label>
+            <select class="form-control selct2-width-100" name="exists_client" id="exists_client"
+                onchange="getMobileno(this.value);">
+                <option value="">Seleccionar cliente</option>
+                @foreach ($client_list as $list)
+                    <option value="{{ $list->id }}">
+                        {{ str_pad($list->id, 5, '0', STR_PAD_LEFT) . ' - ' . $list->full_name }}
+                    </option>
+                @endforeach
+            </select>
+        @endif
     </div>
-
+</div>
+<div class="row">
     <div class="col-md-6 form-group">
         <label for="mobile">Contacto telefónico (opcional)</label>
         <input type="number" class="form-control" id="mobile" name="mobile" value="{{ old('mobile') }}"
@@ -29,15 +28,41 @@
         <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}"
             autocomplete="off">
     </div>
-    <div class="row">
-        <div class="col-md-12 form-group">
-            <label for="vc_entidade">Entidade / Organização (opcional)</label>
-            <input type="text" class="form-control" id="vc_entidade" name="vc_entidade"
-                value="{{ old('vc_entidade') }}">
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-group">
+            @if (!empty($advogado_list) && count($advogado_list) > 0)
+                <label class="discount_text">Seleccionar o Advogado
+                    <er class="rest">*</er>
+                </label>
+                <select class="form-control selct2-width-100" name="advogado_id" id="select_advogado">
+                    <option value="">Seleccionar Advogado</option>
+                    @foreach ($advogado_list as $list)
+                        <option value="{{ $list->id }}">
+                            {{ str_pad($list->id, 5, '0', STR_PAD_LEFT) . ' - ' . $list->nome . ' ' . $list->sobrenome }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
         </div>
     </div>
-
 </div>
+
+<div class="row">
+    <div class="col-md-6 form-group">
+        <label for="vc_entidade">Entidade / Organização (opcional)</label>
+        <input type="text" class="form-control" id="vc_entidade" name="vc_entidade" value="{{ old('vc_entidade') }}">
+    </div>
+    @if (auth()->user()->user_type === 'SuperAdmin')
+        <div class="col-md-6 form-group">
+            <label for="custo">Custo da Reunião *</label>
+            <input type="number" class="form-control" id="custo" name="custo" step="0.01" min="0"
+                value="{{ old('custo') }}" placeholder="0.00">
+        </div>
+    @endif
+</div>
+
 
 <div class="row">
     <div class="col-md-12 form-group">
@@ -56,13 +81,14 @@
     <div class="col-md-4 form-group">
         <label for="time">{{ __('Horario Preferencial') }} <span class="text-danger">*</span></label>
         <select class="form-control" name="time" id="hora" required></select>
-    {{--     <input type="time" class="form-control" id="hora" name="time" value="{{ old('time') }}" required>
-    --}} </div>
+        {{--     <input type="time" class="form-control" id="hora" name="time" value="{{ old('time') }}" required>
+    --}}
+    </div>
     <div class="col-md-4 form-group">
         <label for="vc_plataforma">Plataforma preferida <span class="text-danger">*</span></label>
         <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
             <option value="">-- Selecionar --</option>
-            
+
             <option value="zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom
             </option>
 
@@ -75,6 +101,8 @@
 
 
 </div>
+
+
 
 <div class="row">
     <div class="col-md-12 form-group">

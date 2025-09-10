@@ -228,6 +228,7 @@
                             <tr>
                                 <th>No</th>
                                 <th>Nome do cliente</th>
+                                <th>Nome do Advogado</th>
                                 <th>Data</th>
                                 <th>Hora</th>
                             </tr>

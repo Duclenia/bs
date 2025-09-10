@@ -135,8 +135,9 @@ class AppointmentController extends Controller
         $agenda->hora = date('H:i:s', strtotime($request->time));
         $agenda->observacao = addslashes($request->vc_nota);
         $agenda->type = $request->type;
-        $agenda->assunto = "dd";
-         $agenda->vc_plataforma = $request->vc_plataforma;
+        $agenda->advogado_id = $request->advogado_id;
+        $agenda->custo = $request->custo;
+        $agenda->vc_plataforma = $request->vc_plataforma;
 
         if ($request->vc_plataforma == 'zoom') {
             $zoom = new ZoomService();
@@ -145,19 +146,10 @@ class AppointmentController extends Controller
                 "{$request->date}T{$request->time}:00",
                 60
             );
-   
+
             $agenda->join_url = $data['join_url'];
             $agenda->start_url = $data['start_url'];
         }
-         /* if ($request->vc_plataforma == 'meet') {
-            $meet = new GoogleMeetService();
-            $link = $meet->createMeeting("Minha reunião no Google Meet");
-            $meeting = Meeting::create([
-                'platform' => 'meet',
-                'meeting_id' => null,
-                'join_url' => $link,
-            ]);
-        } */
 
         $agenda->save();
 
@@ -172,11 +164,6 @@ class AppointmentController extends Controller
         $user = auth()->user();
         $isEdit = $user->can('appointment_edit');
 
-        /*
-          |----------------
-          | Listing colomns
-          |----------------
-         */
         $columns = array(
             0 => 'id',
             1 => 'name',
@@ -224,32 +211,15 @@ class AppointmentController extends Controller
             ->orderBy($order, $dir)
             ->get();
 
-        /*
-          |--------------------------------------------
-          | For table search filter from frontend site inside two table namely courses and courseterms.
-          |--------------------------------------------
-         */
-
-        /*
-          |----------------------------------------------------------------------------------------------------------------------------------
-          | Creating json array with all records based on input from front end site like all,searcheded,pagination record (i.e 10,20,50,100).
-          |----------------------------------------------------------------------------------------------------------------------------------
-         */
-
         $totalFiltered = $terms->count();
 
         $data = array();
         if (!empty($terms)) {
 
             foreach ($terms as $term) {
-
-                /**
-                 * For HTMl action option like edit and delete
-                 */
                 $edit = route('agenda.edit', $term->id);
                 $token = csrf_field();
 
-                // $action_delete = '"'.route('sale-Admin.destroy', $cat->id).'"';
                 $action_delete = route('agenda.destroy', $term->id);
 
                 $delete = "<form action='{$action_delete}' method='post' onsubmit ='return  confirmDelete()'>
@@ -259,9 +229,6 @@ class AppointmentController extends Controller
     border: none;'>DELETE</button>
                           </form>";
 
-                /**
-                 * -/End
-                 */
                 $con = '<select name="status" class="appointment-select2" id="status" onchange="change_status(' . "'" . $term->id . "'" . ',' . 'getval(this)' . ',' . "'" . 'agenda' . "'" . ')">';
 
                 //for open status
@@ -285,8 +252,6 @@ class AppointmentController extends Controller
                 if ($term->status == 'CANCEL BY ADVOCATE') {
                     $con .= "selected";
                 }
-                // $con .= ">Cancelado pelo advogado(a)</option>";
-
 
                 $con .= "</select>";
 
@@ -342,13 +307,6 @@ class AppointmentController extends Controller
         echo json_encode($json_data);
     }
 
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
 
@@ -409,4 +367,62 @@ class AppointmentController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function destroy($id) {}
+
+    public function encaminharAgendamento(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Atualizar a agenda com o novo advogado, data e horário
+            $agenda = Agenda::findOrFail($request->agendamento_id);
+            $agenda->update([
+                'advogado_id' => $request->novo_advogado_id,
+                'data' => $request->nova_data,
+                'hora' => $request->novo_horario,
+                'activo' => 'TO FORWARD'
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Consulta encaminhada com sucesso!'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao encaminhar consulta: ' . $request
+            ], 500);
+        }
+    }
+
+    public function uploadComprovativo(Request $request)
+    {
+        $request->validate([
+            'agendamento_id' => 'required|exists:agenda,id',
+            'comprovativo' => 'required|file|mimes:pdf|max:10240'
+        ]);
+
+        try {
+            $file = $request->file('comprovativo');
+            $path = $file->store('agendamento/comprovativos', 'public');
+
+            Agenda::where('id', $request->agendamento_id)->update([
+                'vc_caminho_pdf' => $path
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comprovativo enviado com sucesso!',
+                'path' => $path
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao enviar comprovativo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

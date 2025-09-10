@@ -5,7 +5,7 @@
 
     RewriteEngine On
     RewriteCond %{SERVER_PORT} 80
-    RewriteRule ^(.*)$ https://localhost/demo/$1 [R,L]
+    RewriteRule ^(.*)$ mwangobrain.info/bs/$1 [R,L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

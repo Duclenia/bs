@@ -42,16 +42,36 @@
                                     <input type="email" class="form-control" id="email" name="email"
                                         value="{{ old('email', Auth::User()->email) }}" autocomplete="off" readonly>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-12 form-group">
-                                        <label for="vc_entidade">Entidade / Organização (opcional)</label>
-                                        <input type="text" class="form-control" id="vc_entidade" name="vc_entidade"
-                                            value="{{ old('vc_entidade') }}">
-                                    </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 form-group">
+                                    <label for="vc_entidade">Entidade / Organização (opcional)</label>
+                                    <input type="text" class="form-control" id="vc_entidade" name="vc_entidade"
+                                        value="{{ old('vc_entidade') }}">
                                 </div>
-
                             </div>
 
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        @if (!empty($advogado_list) && count($advogado_list) > 0)
+                                            <label class="discount_text">Seleccionar o Advogado
+                                                <er class="rest">*</er>
+                                            </label>
+                                            <select class="form-control selct2-width-100" name="advogado_id"
+                                                id="select_advogado">
+                                                <option value="">Seleccionar Advogado</option>
+                                                @foreach ($advogado_list as $list)
+                                                    <option value="{{ $list->id }}" {{ isset($advogado_selecionado) && $advogado_selecionado == $list->id ? 'selected' : '' }}>
+                                                        {{ str_pad($list->id, 5, '0', STR_PAD_LEFT) . ' - ' . $list->nome . ' ' . $list->sobrenome }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-md-12 form-group">
                                     <label for="vc_motivo">Motivo da reunião <span class="text-danger">*</span></label>
@@ -77,7 +97,7 @@
                                             class="text-danger">*</span></label>
                                     <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
                                         <option value="">-- Selecionar --</option>
-                                        
+
                                         <option value="zoom" {{ old('vc_plataforma') == 'Zoom' ? 'selected' : '' }}>Zoom
                                         </option>
 
@@ -232,44 +252,62 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
 
     <script>
-        $(document).ready(function() {
+       $(document).ready(function() {
             let blockedDays = [];
             let minDate = '';
+            let flatpickrInstances = {};
 
-
-            // Carregar datas bloqueadas
-            $.get('/bs/admin/blocked-dates', function(response) {
-
-                blockedDays = response.blocked_days;
-                minDate = response.min_date;
-
-                flatpickr("#data, #data2", {
-                    dateFormat: "Y-m-d",
-                    minDate: minDate,
-                    disable: [
-                        function(date) {
-                            return blockedDays.includes(date.getDay());
-                        }
-                    ],
-                    locale: flatpickr.l10ns.pt,
-                    onChange: function(selectedDates, dateStr, instance) {
-                        // Disparar evento change para buscar horários
-                        $(instance.element).trigger('change');
-                    }
+            function initializeFlatpickr(advogadoId = null) {
+                Object.values(flatpickrInstances).forEach(instance => {
+                    if (instance && instance.destroy) instance.destroy();
                 });
+                flatpickrInstances = {};
+
+                const url = advogadoId ? `/bs/admin/blocked-dates/${advogadoId}` : '/bs/admin/blocked-dates';
+
+                $.get(url, function(response) {
+                    blockedDays = response.blocked_days;
+                    minDate = response.min_date;
+
+                    ['#data', '#data2'].forEach(selector => {
+                        const element = document.querySelector(selector);
+                        if (element) {
+                            flatpickrInstances[selector] = flatpickr(selector, {
+                                dateFormat: "Y-m-d",
+                                minDate: minDate,
+                                disable: [function(date) {
+                                    return blockedDays.includes(date.getDay());
+                                }],
+                                locale: flatpickr.l10ns.pt,
+                                onChange: function(selectedDates, dateStr, instance) {
+                                    $(instance.element).trigger('change');
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+
+            $(document).on('change', '#select_advogado, #select_advogado_exist', function() {
+                const advogadoId = $(this).val();
+                $('#data, #data2').val('');
+                $('#hora, #hora2').html('<option value="">Selecionar horário</option>');
+                initializeFlatpickr(advogadoId);
             });
+
             $(document).on('change', '#data, #data2', function() {
-                let date = $(this).val();
-                let horaSelect = $(this).attr('id') === 'data' ? '#hora' : '#hora2';
-                if (date) {
+                const date = $(this).val();
+                const horaSelect = $(this).attr('id') === 'data' ? '#hora' : '#hora2';
+                const advogadoSelect = $(this).closest('form').find(
+                    '#select_advogado, #select_advogado_exist');
+                const advogadoId = advogadoSelect.val();
+
+                if (date && advogadoId) {
                     $.ajax({
-                        url: `/bs/admin/available-times/${date}`,
+                        url: `/bs/admin/available-times-advogado/${advogadoId}/${date}`,
                         type: 'GET',
                         success: function(response) {
-                            console.log('Resposta:', response);
-
                             let options = '<option value="">Selecionar horário</option>';
-
                             if (response.available_times && response.available_times.length >
                                 0) {
                                 response.available_times.forEach(time => {
@@ -278,13 +316,11 @@
                                 });
                             } else {
                                 options +=
-                                    '<option value="">Nenhum horário disponível</option>';
+                                '<option value="">Nenhum horário disponível</option>';
                             }
-
                             $(horaSelect).html(options);
                         },
-                        error: function(xhr, status, error) {
-                            console.error('Erro ao buscar horários:', error);
+                        error: function() {
                             $(horaSelect).html(
                                 '<option value="">Erro ao carregar horários</option>');
                         }
@@ -293,6 +329,8 @@
                     $(horaSelect).html('<option value="">Selecionar horário</option>');
                 }
             });
+
+            initializeFlatpickr();
         });
     </script>
     <script src="{{ asset('assets/cliente/appointment/appointment.js') }}"></script>

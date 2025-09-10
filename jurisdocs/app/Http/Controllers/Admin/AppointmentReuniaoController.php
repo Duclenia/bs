@@ -52,7 +52,12 @@ class AppointmentReuniaoController extends Controller
         $data['state'] = Provincia::all();
         $data['tipospessoas'] = TipoPessoa::all();
         $data['tiposdocumentos'] = TipoDocumento::all();
-
+        $data['advogado_list'] = DB::table('admin AS a')
+            ->leftJoin('users AS u', 'a.user_id', '=', 'u.id')
+            ->leftJoin('pessoasingular AS p', 'p.id', '=', 'a.pessoasingular_id')
+            ->where('user_type', 'ADV')
+            ->select('u.*', 'p.nome as nome', 'p.sobrenome as sobrenome')
+            ->get();
         return view('admin.agendamento.reuniao.appointment_create', $data);
     }
 
@@ -93,8 +98,11 @@ class AppointmentReuniaoController extends Controller
 
         $data['appointment'] = Agenda::join('agendamento_reuniaos AS ar', 'ar.agenda_id', '=', 'agenda.id')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'agenda.cliente_id')
+            ->leftJoin('admin AS adm', 'adm.user_id', '=', 'agenda.advogado_id')
+            ->leftJoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
+
             ->where('agenda.id', decrypt($id))
-            ->select('agenda.*', 'ar.*', 'cl.nome as cliente_nome', 'cl.sobrenome as cliente_sobrenome', 'cl.instituicao as cliente_instituicao')
+            ->select('agenda.*', 'ar.*', 'cl.nome as cliente_nome', 'cl.sobrenome as cliente_sobrenome', 'cl.instituicao as cliente_instituicao', 'ps.nome as advogado_nome', 'ps.sobrenome as advogado_sobrenome', 'agenda.vc_caminho_pdf')
             ->first();
 
         return view('admin.agendamento.reuniao.appointment_show', $data);
@@ -218,7 +226,7 @@ class AppointmentReuniaoController extends Controller
                 if ($term->status == 'CANCEL BY CLIENT') {
                     $con .= "selected";
                 }
-                $con .= ">Cancelado pelo cliente</option>";
+                $con .= ">Remarcado pelo cliente</option>";
 
 
                 //for CANCEL BY ADVOCATE status
@@ -226,7 +234,7 @@ class AppointmentReuniaoController extends Controller
                 if ($term->status == 'CANCEL BY ADVOCA') {
                     $con .= "selected";
                 }
-                $con .= ">Cancelado pelo advogado(a)</option>";
+                $con .= ">Remarcado pelo advogado(a)</option>";
 
                 $con .= "<option value='SERVED'";
                 if ($term->status == 'SERVED') {
@@ -234,7 +242,16 @@ class AppointmentReuniaoController extends Controller
                 }
                 $con .= ">Cliente Atendido(a)</option>";
 
+                $con .= "<option value='TO FORWARD'";
+
+                if ($term->status == 'TO FORWARD') {
+                    $con .= "selected";
+                }
+                $con .= ">Encaminhar para outro advogado</option>";
+
+
                 $con .= "</select>";
+
 
 
                 if ($isEdit == "1") {
@@ -264,11 +281,15 @@ class AppointmentReuniaoController extends Controller
                         'view' => route('reuniao.show', encrypt($term->id)),
                         'edit' => route('reuniao.edit', encrypt($term->id)),
                         'edit_permission' => $isEdit,
+                        'upload_comprovativo' => collect(['id' => $term->id])
                     ]);
                 } else {
-                    $nestedData['action'] = $this->action([
-                        'view' => route('reuniao.show', encrypt($term->id)),
-                    ]);
+                    $nestedData['action'] = $this->action(
+                        [
+                            'view' => route('reuniao.show', encrypt($term->id)),
+                            'upload_comprovativo' => collect(['id' => $term->id])
+                        ]
+                    );
                 }
 
                 $data[] = $nestedData;
@@ -305,7 +326,7 @@ class AppointmentReuniaoController extends Controller
     {
 
         $agenda = Agenda::findOrFail($id);
-       Agenda::where('id', $id)->update([
+        Agenda::where('id', $id)->update([
             'nome' => $request->vc_entidade,
             'telefone' => $request->mobile,
             'data' => date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->date))),
@@ -324,11 +345,10 @@ class AppointmentReuniaoController extends Controller
                     "{$request->date}T{$request->time}:00",
                     60
                 );
-               Agenda::where('id', $id)->update([
+                Agenda::where('id', $id)->update([
                     'join_url' => $data['join_url'],
                     'start_url' => $data['start_url'],
                 ]);
-
             }
         }
 

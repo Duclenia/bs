@@ -70,6 +70,14 @@
                 </a>
             </li>
             @endif
+            
+            @if (isset($upload_comprovativo))
+                <li>
+                    <a href="javascript:void(0)" onclick="openUploadModal({{ $upload_comprovativo->get('id') }})">
+                        <i class="fa fa-upload"></i>&nbsp;&nbsp;Upload Comprovativo
+                    </a>
+                </li>
+            @endif
 
             @if (isset($payment_recevie_modal))
                 <li class="{{ isset($edit_permission) &&  $edit_permission=="1" ? '':'hidden' }}">

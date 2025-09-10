@@ -47,6 +47,12 @@ jQuery(document).ready(function () {
     $('#exists_client').select2({
         placeholder: 'Seleccionar cliente'
     });
+    $('#select_advogado').select2({
+        placeholder: 'Seleccionar Advogado',
+    });
+    $('#select_advogado_exist').select2({
+        placeholder: 'Seleccionar Advogado',
+    });
 
     $('input[name="type"]').on('change', function () {
         if (this.value === 'exists') {
@@ -60,7 +66,13 @@ jQuery(document).ready(function () {
             $("#exists_client").val('').select2({
                 placeholder: 'Seleccionar cliente'
             });
-
+            $('#select_advogado_exist').val('').select2({
+                placeholder: 'Seleccionar Advogado',
+                language: "pt",
+            });
+            $("#exists_client").val('').select2({
+                placeholder: 'Seleccionar cliente'
+            });
             $('#steps-indicator').hide();
             $('#existing-client-form, .exists-buttons').show();
             $('#new-client-step2').hide();

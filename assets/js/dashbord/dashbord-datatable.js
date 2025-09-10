@@ -43,20 +43,19 @@ var DatatableRemoteAjaxDemo = function () {
             "columns": [
                 { "data": "id" },
                 { "data": "name" },
-                // { "data": "mobile" },
+                { "data": "advogado" },
                 { "data": "date" },
                 { "data": "time" },
-                // { "data": "options" },
+
             ],
-            //Set column definition initialisation properties.
             "columnDefs": [
                 {
-                    "targets": [-1], //last column
-                    "orderable": false, //set not orderable
+                    "targets": [-1],
+                    "orderable": false,
                 },
                 {
-                    "targets": [-2], //last column
-                    "orderable": false, //set not orderable
+                    "targets": [-2],
+                    "orderable": false,
                 },
             ], language: {
                 paginate: {
@@ -68,9 +67,9 @@ var DatatableRemoteAjaxDemo = function () {
         })
     }
 
-    //== Public Functions
+
     return {
-        // public functions
+
         init: function () {
             lsitDataInTable();
 
@@ -120,15 +119,15 @@ var DatatableRemoteAjaxDemo = function () {
                     }
                 },
                 dayClick: function (date, jsEvent, view) {
-                    // Mostrar agendas do dia clicado
+
                     showDayAppointmentsAdmin(date.format('YYYY-MM-DD'));
                 },
                 dayRender: function (date, cell) {
-                    // Verificar se o dia tem agendamentos
+
                     checkDayAppointmentsAdmin(date, cell);
                 },
                 events: function (start, end, timezone, callback) {
-                    //ajaxindicatorstart('Please wait a moment..Fetching  detail');
+
                     var current = $('#calendar_dashbors_case').fullCalendar('getDate');
                     // alert(current);
                     var new_url = ajaxCalander;
@@ -290,13 +289,13 @@ function checkDayAppointmentsAdmin(date, cell) {
                         'color': '#999',
                         'opacity': '0.6'
                     });
-                      cell.append('<span class="appointment-badge" style="background-color:#3c3c3c" > ' + response.total + '</span>');
+                    cell.append('<span class="appointment-badge" style="background-color:#3c3c3c" > ' + response.total + '</span>');
                 } else {
                     cell.css({
                         'background-color': '#6ee50230',
                         'position': 'relative'
                     });
-                      cell.append('<span class="appointment-badge" > ' + response.total + '</span>');
+                    cell.append('<span class="appointment-badge" > ' + response.total + '</span>');
                 }
 
             }
@@ -327,12 +326,13 @@ function showDayAppointmentsAdmin(selectedDate) {
             if (appointments.length > 0) {
                 modalContent += '<div class="table-responsive">';
                 modalContent += '<table class="table table-striped">';
-                modalContent += '<thead><tr><th>Cliente</th><th>Hora</th><th>Telefone</th></tr></thead>';
+                modalContent += '<thead><tr><th>Cliente</th><th>Advogado</th><th>Hora</th><th>Telefone</th></tr></thead>';
                 modalContent += '<tbody>';
 
                 appointments.forEach(function (appointment) {
                     modalContent += '<tr>';
                     modalContent += '<td>' + appointment.name + '</td>';
+                    modalContent += '<td>' + appointment.advogado + '</td>';
                     modalContent += '<td>' + appointment.time + '</td>';
                     modalContent += '<td>' + appointment.mobile + '</td>';
                     modalContent += '</tr>';

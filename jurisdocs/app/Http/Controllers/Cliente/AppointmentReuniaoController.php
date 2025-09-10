@@ -43,9 +43,25 @@ class AppointmentReuniaoController extends Controller
     {
         $cliente = auth()->user()->cliente;
 
-        if ($cliente->activo == 'S')
-            return view('cliente.appointment.reuniao.appointment_create');
-        else
+        if ($cliente->activo == 'S') {
+            // Buscar primeiro advogado que o cliente já tem vinculação
+            $advogadoCliente = DB::table('agenda')
+                ->where('cliente_id', $cliente->id)
+                ->whereNotNull('advogado_id')
+                ->orderBy('id', 'desc')
+                ->value('advogado_id');
+                
+            $data['advogado_list'] = DB::table('admin AS a')
+                ->leftJoin('users AS u', 'a.user_id', '=', 'u.id')
+                ->leftJoin('pessoasingular AS p', 'p.id', '=', 'a.pessoasingular_id')
+                ->where('user_type', 'ADV')
+                ->select('u.*', 'p.nome as nome', 'p.sobrenome as sobrenome')
+                ->get();
+                
+            $data['advogado_selecionado'] = $advogadoCliente;
+            
+            return view('cliente.appointment.reuniao.appointment_create', $data);
+        } else
             return back();
     }
 
@@ -85,9 +101,13 @@ class AppointmentReuniaoController extends Controller
         $cliente = $user->cliente;
 
         $data['appointment'] = Agenda::join('agendamento_reuniaos AS ar', 'ar.agenda_id', '=', 'agenda.id')
+            ->leftJoin('cliente AS cl', 'cl.id', '=', 'agenda.cliente_id')
+            ->leftJoin('admin AS adm', 'adm.user_id', '=', 'agenda.advogado_id')
+            ->leftJoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
+
             ->where('agenda.id', decrypt($id))
             ->where('agenda.cliente_id', $cliente->id)
-            ->select('agenda.*', 'ar.*')
+            ->select('agenda.*', 'ar.*', 'ps.*')
             ->first();
 
         if (!$data['appointment']) {
@@ -123,7 +143,7 @@ class AppointmentReuniaoController extends Controller
         $totalData = DB::table('agenda AS a')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_reuniaos as ac', 'ac.agenda_id', '=', 'a.id')
-            ->select('ac.vc_entidade as vc_entidade', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type')
+            ->select('ac.vc_entidade as vc_entidade', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.custo AS custo')
             ->where('a.cliente_id', $cliente->id)
             ->count();
 
@@ -139,7 +159,7 @@ class AppointmentReuniaoController extends Controller
         $terms = DB::table('agenda AS a')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_reuniaos as ac', 'ac.agenda_id', '=', 'a.id')
-            ->select('ac.vc_entidade as vc_entidade', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
+            ->select('ac.vc_entidade as vc_entidade', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time', 'a.vc_caminho_pdf')
             ->orderBy('ac.id', 'ASC')
             ->where('a.cliente_id', $cliente->id)
             ->when($request->input('appoint_date_from'), function ($query, $iterm) {
@@ -212,6 +232,10 @@ class AppointmentReuniaoController extends Controller
                     $statusText = 'Cancelado pelo cliente';
                 } elseif ($term->status == 'CANCEL BY ADVOCATE') {
                     $statusText = 'Cancelado pelo advogado';
+                } elseif ($term->status == 'TO FORWARD') {
+                    $statusText = 'Encaminhado para advogado';
+                } elseif ($term->status == 'PENDING') {
+                    $statusText = 'Pendente, por aprovar';
                 } else {
                     $statusText = $term->status;
                 }
@@ -231,9 +255,16 @@ class AppointmentReuniaoController extends Controller
                 $nestedData['mobile'] = htmlspecialchars($term->mobile);
                 $nestedData['vc_entidade'] = htmlspecialchars($term->vc_entidade);
 
-                $nestedData['action'] = $this->action([
-                    'view' => route('cliente.reuniao.show', encrypt($term->id)),
-                ]);
+                $actionData = [
+                    'view' => route('cliente.reuniao.show', encrypt($term->id))
+                ];
+
+                // Só mostrar upload se não tiver comprovativo
+                if (empty($term->vc_caminho_pdf)) {
+                    $actionData['upload_comprovativo'] = collect(['id' => $term->id]);
+                }
+
+                $nestedData['action'] = $this->action($actionData);
 
                 $data[] = $nestedData;
             }

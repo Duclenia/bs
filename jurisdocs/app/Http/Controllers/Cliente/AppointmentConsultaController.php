@@ -55,11 +55,25 @@ class AppointmentConsultaController extends Controller
      */
     public function create()
     {
-         $cliente = auth()->user()->cliente;
+        $cliente = auth()->user()->cliente;
 
-        if ($cliente->activo == 'S')
-            return view('cliente.appointment.consulta.appointment_create');
-        else
+        if ($cliente->activo == 'S') {
+            $advogadoCliente = DB::table('agenda')
+                ->where('cliente_id', $cliente->id)
+                ->whereNotNull('advogado_id')
+                ->orderBy('id', 'desc')
+                ->value('advogado_id');
+
+            $data['advogado_list'] = DB::table('admin AS a')
+                ->leftJoin('users AS u', 'a.user_id', '=', 'u.id')
+                ->leftJoin('pessoasingular AS p', 'p.id', '=', 'a.pessoasingular_id')
+                ->where('user_type', 'ADV')
+                ->select('u.*', 'p.nome as nome', 'p.sobrenome as sobrenome')
+                ->get();
+
+            $data['advogado_selecionado'] = $advogadoCliente;
+            return view('cliente.appointment.consulta.appointment_create', $data);
+        } else
             return back();
     }
 
@@ -101,9 +115,12 @@ class AppointmentConsultaController extends Controller
         $cliente = $user->cliente;
 
         $data['appointment'] = Agenda::join('agendamento_consultas AS ac', 'ac.agenda_id', '=', 'agenda.id')
+            ->leftJoin('admin AS adm', 'adm.user_id', '=', 'agenda.advogado_id')
+            ->leftJoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
+
             ->where('agenda.id', decrypt($id))
             ->where('agenda.cliente_id', $cliente->id)
-            ->select('agenda.*', 'ac.*')
+            ->select('agenda.*', 'ac.*', 'ps.*')
             ->first();
 
         if (!$data['appointment']) {
@@ -152,7 +169,9 @@ class AppointmentConsultaController extends Controller
         $terms = DB::table('agenda AS a')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_consultas as ac', 'ac.agenda_id', '=', 'a.id')
-            ->select('ac.vc_tipo as vc_tipo', 'ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
+            ->leftJoin('admin AS adm', 'adm.user_id', '=', 'a.advogado_id')
+            ->leftJoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
+            ->select('ac.vc_tipo as vc_tipo', 'ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time', 'a.vc_caminho_pdf', 'ps.nome as advogado_nome', 'ps.sobrenome as advogado_sobrenome')
             ->where('a.cliente_id', $cliente->id)
             ->when($request->input('appoint_date_from'), function ($query, $iterm) {
                 $iterm = LogActivity::commonDateFromat($iterm);
@@ -192,7 +211,7 @@ class AppointmentConsultaController extends Controller
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
             ->Join('agendamento_consultas as ac', 'ac.agenda_id', '=', 'a.id')
             ->select('ac.vc_area as vc_area', 'a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type', 'a.hora AS time')
-           ->where('a.cliente_id', $cliente->id)
+            ->where('a.cliente_id', $cliente->id)
             ->when($request->input('appoint_date_from'), function ($query, $iterm) {
                 $iterm = LogActivity::commonDateFromat($iterm);
                 return $query->whereDate('a.data', '>=', date('Y-m-d', strtotime($iterm)));
@@ -246,6 +265,10 @@ class AppointmentConsultaController extends Controller
                     $statusText = 'Cancelado pelo cliente';
                 } elseif ($term->status == 'CANCEL BY ADVOCATE') {
                     $statusText = 'Cancelado pelo advogado';
+                } elseif ($term->status == 'TO FORWARD') {
+                    $statusText = 'Encaminhado para advogado';
+                } elseif ($term->status == 'PENDING') {
+                    $statusText = 'Pendente, por aprovar';
                 } else {
                     $statusText = $term->status;
                 }
@@ -269,9 +292,16 @@ class AppointmentConsultaController extends Controller
                 $nestedData['vc_area'] = htmlspecialchars($term->vc_area);
                 $nestedData['name'] = htmlspecialchars($term->vc_tipo);
 
-                 $nestedData['action'] = $this->action([
-                    'view' => route('cliente.consulta.show', encrypt($term->id)),
-                ]);
+                $actionData = [
+                    'view' => route('cliente.consulta.show', encrypt($term->id))
+                ];
+
+                // Só mostrar upload se não tiver comprovativo
+                if (empty($term->vc_caminho_pdf)) {
+                    $actionData['upload_comprovativo'] = collect(['id' => $term->id]);
+                }
+
+                $nestedData['action'] = $this->action($actionData);
 
                 $data[] = $nestedData;
             }

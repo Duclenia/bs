@@ -75,6 +75,25 @@
      </div>
 
  </div>
+ <div class="row">
+     <div class="col-md-12">
+         <div class="form-group">
+             @if (!empty($advogado_list) && count($advogado_list) > 0)
+                 <label class="discount_text">Seleccionar o Advogado
+                     <er class="rest">*</er>
+                 </label>
+                 <select class="form-control selct2-width-100" name="advogado_id" id="select_advogado">
+                     <option value="">Seleccionar Advogado</option>
+                     @foreach ($advogado_list as $list)
+                         <option value="{{ $list->id }}">
+                             {{ str_pad($list->id, 5, '0', STR_PAD_LEFT) . ' - ' . $list->nome . ' ' . $list->sobrenome }}
+                         </option>
+                     @endforeach
+                 </select>
+             @endif
+         </div>
+     </div>
+ </div>
 
  <div class="row">
      <div class="col-md-12 form-group">
@@ -85,14 +104,14 @@
 
  <div class="row">
      <div class="col-md-4 form-group">
-        <label for="data2">{{ __('Data Preferencial') }} <span class="text-danger">*</span></label>
-        <input type="date" class="form-control" id="data" name="date" value="{{ old('date') }}" required>
-    </div>
+         <label for="data2">{{ __('Data Preferencial') }} <span class="text-danger">*</span></label>
+         <input type="date" class="form-control" id="data" name="date" value="{{ old('date') }}" required>
+     </div>
 
-    <div class="col-md-4 form-group">
-        <label for="hora2">{{ __('Horario Preferencial') }} <span class="text-danger">*</span></label>
-        <select class="form-control" name="time" id="hora" required></select>
-    </div>
+     <div class="col-md-4 form-group">
+         <label for="hora2">{{ __('Horario Preferencial') }} <span class="text-danger">*</span></label>
+         <select class="form-control" name="time" id="hora" required></select>
+     </div>
      <div class="col-md-4 form-group">
          <label for="vc_plataforma">Plataforma preferida <span class="text-danger">*</span></label>
          <select class="form-control" id="vc_plataforma" name="vc_plataforma" required>
@@ -106,11 +125,17 @@
              </option>
          </select>
      </div>
-
-
-
-
  </div>
+
+ @if (auth()->user()->user_type === 'SuperAdmin')
+     <div class="row">
+         <div class="col-md-6 form-group">
+             <label for="custo">Custo da Consulta *</label>
+             <input type="number" class="form-control" id="custo" name="custo" step="0.01"
+                 min="0" value="{{ old('custo') }}" placeholder="0.00">
+         </div>
+     </div>
+ @endif
 
  <br>
  <div class="row">

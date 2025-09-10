@@ -26,9 +26,10 @@ class FacturaController extends Controller
 {
 
     use DatatablTrait;
-    
-    public function __construct() {
-        
+
+    public function __construct()
+    {
+
         $this->middleware('check.subscricao', ['only' => ['create', 'store']]);
     }
 
@@ -39,49 +40,48 @@ class FacturaController extends Controller
      */
     public function getClientDetailByIdEdit($id)
     {
-      
+
         $records = DB::table('cliente')
-                ->where('id', $id)
-                // ->where('advocate_id',$advocate_id)
-                ->first();
+            ->where('id', $id)
+            // ->where('advocate_id',$advocate_id)
+            ->first();
         $detail = '';
         if (!empty($records)) {
 
             $detail = '<label  class="discount_text">Facturado para:- </label><br>';
-            
-            if($records->tipo == 2):
-              $detail .= '<p  style="color:#333;">' . htmlspecialchars ($records->nome). ' '.htmlspecialchars ($records->sobrenome). '</p>';
+
+            if ($records->tipo == 2):
+                $detail .= '<p  style="color:#333;">' . htmlspecialchars($records->nome) . ' ' . htmlspecialchars($records->sobrenome) . '</p>';
             else:
-              $detail .= '<p  style="color:#333;">' . htmlspecialchars ($records->instituicao). '</p>';
+                $detail .= '<p  style="color:#333;">' . htmlspecialchars($records->instituicao) . '</p>';
             endif;
-            
+
             if ($records->endereco != '')
                 $detail .= '<p style="color:#333;">' . $records->endereco . '</p>';
             if ($records->telefone != '')
-                $detail .= '<p style="color:#333;">' . htmlspecialchars ($records->telefone) . '</p>';
+                $detail .= '<p style="color:#333;">' . htmlspecialchars($records->telefone) . '</p>';
         }
         return $detail;
     }
 
     public function getClientDetailById(Request $request)
     {
-        
+
         $records = DB::table('cliente')
-                ->where('id', $request->id)
-                ->first();
+            ->where('id', $request->id)
+            ->first();
         $detail = '';
-        
-        if (!empty($records))
-        {
+
+        if (!empty($records)) {
 
             $detail = '<label  class="discount_text">Billed To:- </label><br>';
-            
-            if($records->tipo == 2):
-             $detail .= '<p style="color:#333;">' . htmlspecialchars ($records->nome).' '.htmlspecialchars ($records->sobrenome). '</p>';
+
+            if ($records->tipo == 2):
+                $detail .= '<p style="color:#333;">' . htmlspecialchars($records->nome) . ' ' . htmlspecialchars($records->sobrenome) . '</p>';
             else:
-              $detail .= '<p style="color:#333;">' . htmlspecialchars ($records->instituicao). '</p>';
+                $detail .= '<p style="color:#333;">' . htmlspecialchars($records->instituicao) . '</p>';
             endif;
-            
+
             if ($records->endereco != '')
                 $detail .= '<p style="color:#333;">' . $records->endereco . '</p>';
             if ($records->telefone != '')
@@ -102,9 +102,9 @@ class FacturaController extends Controller
      */
     public function create()
     {
-        
+
         $advocate_id = $this->getLoginUserId();
-        
+
         $data['client_list'] = Cliente::where('activo', 'S')->where('id', $advocate_id)->orderBy('nome', 'asc')->get();
         //generate invoice number
         $data['invoice_no'] = $this->generateInvoice();
@@ -112,10 +112,8 @@ class FacturaController extends Controller
         $data['tax_all'] = Imposto::where('activo', 'S')->get();
 
         $thml = '<select class="form-control taxListCustom" name="tax_id_custom[]"><option value="0" taxsepara="" taxrate="0.00">TAX@0(0.00)</option>';
-        if (!empty($tax) && count($tax))
-        {
-            foreach ($tax as $key => $value)
-            {
+        if (!empty($tax) && count($tax)) {
+            foreach ($tax as $key => $value) {
                 $thml .= '<option value="' . $value->id . '" taxsepara="' . $value->name . '" taxrate="' . $value->per . '">' . $value->name . '@ ' . $value->per . '</option>';
             }
         }
@@ -130,19 +128,19 @@ class FacturaController extends Controller
     {
 
         $user = auth()->user();
-        
+
         if (!$user->can('invoice_add'))
             return back();
-        
+
 
         // $advocate_id = $this->getLoginUserId();
         $data['client_list'] = Cliente::where('activo', 'S')
-                                        ->orderBy('nome', 'asc')
-                                        ->get();
+            ->orderBy('nome', 'asc')
+            ->get();
 
         $data['service_lists'] = Servico::where('activo', 'S')
-                                            ->orderBy('nome', 'asc')
-                                            ->get();
+            ->orderBy('nome', 'asc')
+            ->get();
 
         //generate invoice number
         $data['invoice_no'] = $this->generateInvoice();
@@ -168,27 +166,28 @@ class FacturaController extends Controller
         $paymentReceived->factura_id = $request->invoice_id;
         $paymentReceived->receipt_number = $receiptNo;
         $paymentReceived->amount = $request->amount;
-
         $paymentReceived->receiving_date = date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->receive_date)));
         $paymentReceived->cheque_date = (!empty($request->cheque_date)) ? date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->cheque_date))) : null;
         $paymentReceived->payment_type = $request->method;
         $paymentReceived->reference_number = $request->referance_number;
         $paymentReceived->note = $request->note;
+        $paymentReceived->status = 'pendente';
         $paymentReceived->payment_received_by = auth()->user()->id;
+
         $paymentReceived->save();
 
         //change status
 
         $t = DB::table('factura AS f')
-                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                ->select('f.id', 'p.amount', 'f.inv_date', 'c.nome')
-                ->selectRaw('sum(p.amount) as paidAmount')
-                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                //->where('i.advocate_id', $advocate_id)
-                ->where('f.id', $request->invoice_id)
-                ->groupBy('p.factura_id')
-                ->get();
+            ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+            ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+            ->select('f.id', 'p.amount', 'f.inv_date', 'c.nome')
+            ->selectRaw('sum(p.amount) as paidAmount')
+            ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+            //->where('i.advocate_id', $advocate_id)
+            ->where('f.id', $request->invoice_id)
+            ->groupBy('p.factura_id')
+            ->get();
 
         $paidAmount = 0;
         $dueAmount = 0;
@@ -204,7 +203,6 @@ class FacturaController extends Controller
             $status = Factura::find($request->invoice_id);
             $status->inv_status = "Partially Paid";
             $status->save();
-            
         } elseif ($paidAmount >= $dueAmount) {
             $status = Factura::findOrFail($request->invoice_id);
             $status->inv_status = "Paid";
@@ -235,11 +233,11 @@ class FacturaController extends Controller
      */
     public function edit($id)
     {
-        
+
         $user = auth()->user();
         if (!$user->can('invoice_edit'))
             return back();
-        
+
         $data['client_list'] = Cliente::orderBy('nome', 'asc')->get();
 
         $data['invoice'] = Factura::with('itensFactura')->findOrFail(decrypt($id));
@@ -251,7 +249,7 @@ class FacturaController extends Controller
 
         return view('admin.factura.invoice_edit', $data);
     }
-    
+
     public function editInvoice(Request $request)
     {
 
@@ -259,13 +257,13 @@ class FacturaController extends Controller
             'client_id' => 'required',
             'inc_Date' => 'required',
             'due_Date' => 'required',
-                
+
         ]);
 
         $check = $this->check_invoice_exits($request->invoice_id, $request->invoice_id);
         if ($check == "false") {
             Session::flash('error', "Faild to data");
-            
+
             return redirect()->route('factura.index');
         }
 
@@ -274,11 +272,11 @@ class FacturaController extends Controller
         $factura->cliente_id = $request->client_id;
         $factura->tax_amount = $request->taxTotal;
         $factura->total_amount = $request->total;
-        
+
         $factura->due_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->due_Date)));
         $factura->inv_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->inc_Date)));
         $factura->remarks = $request->note;
-        
+
         $factura->tax_amount = $request->taxVal;
         $factura->tax_id = $request->tax;
         $factura->save();
@@ -291,7 +289,7 @@ class FacturaController extends Controller
                 $getIdes = ItemFactura::where('factura_id', $request->invoice_id)->whereNotIn('id', $ids)->delete();
             }
         }
-        
+
         if (!empty($request->invoice_items) && count($request->invoice_items) > 0) {
             foreach ($request->invoice_items as $key => $value) {
 
@@ -324,10 +322,7 @@ class FacturaController extends Controller
      * @param  int $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        
-    }
+    public function update(Request $request, $id) {}
 
     public function CreateInvoiceViewDetail($id, $p)
     {
@@ -383,8 +378,8 @@ class FacturaController extends Controller
 
                 Mail::send('pdf.invoice', $data, function ($message) use ($pdf, $input) {
                     $message
-                            ->from($input['from'], $input['title'])
-                            ->subject($input['subject']);
+                        ->from($input['from'], $input['title'])
+                        ->subject($input['subject']);
                     $message->to($input['to']);
                     $message->attachData($pdf->output(), $input['pdfName']);
                 });
@@ -401,9 +396,9 @@ class FacturaController extends Controller
     public function checkClientEmailExits($id)
     {
         $cliente = Cliente::findOrFail($id);
-        
+
         if ($cliente->email == "") {
-            
+
             return false;
         } else {
             return true;
@@ -414,7 +409,7 @@ class FacturaController extends Controller
     {
 
         $user = auth()->user();
-        
+
         $isEdit = $user->can('invoice_edit');
         $isDelete = $user->can('invoice_delete');
 
@@ -433,8 +428,8 @@ class FacturaController extends Controller
         );
 
         $totalData = DB::table('factura AS f')
-                ->where('f.activo', 'S')
-                ->count();
+            ->where('f.activo', 'S')
+            ->count();
 
         $totalFiltered = $totalData;
         $totalRec = $totalData;
@@ -445,17 +440,17 @@ class FacturaController extends Controller
 
         if (empty($request->input('search.value'))) {
             $terms = DB::table('factura AS f')
-                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                    ->select('f.factura_no', 'f.total_amount')
-                    ->selectRaw('sum(p.amount) as paidAmount')
-                    ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                    ->where('f.activo', 'S')
-                    ->groupBy('f.factura_no')
-                    ->groupBy('f.total_amount')
-                    ->offset($start)
-                    ->limit($limit)
-                    ->get();
+                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                ->select('f.factura_no', 'f.total_amount')
+                ->selectRaw('sum(p.amount) as paidAmount')
+                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                ->where('f.activo', 'S')
+                ->groupBy('f.factura_no')
+                ->groupBy('f.total_amount')
+                ->offset($start)
+                ->limit($limit)
+                ->get();
         } else {
 
             /*
@@ -466,21 +461,21 @@ class FacturaController extends Controller
             $search = $request->input('search.value');
 
             $terms = DB::table('factura AS f')
-                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                    ->select('f.factura_no', 'f.total_amount')
-                    ->selectRaw('sum(p.amount) as paidAmount')
-                    ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                    ->where('f.activo', 'S')
-                    ->where(function ($quary) use ($search) {
-                        $quary->where('f.factura_no', 'LIKE', "%{$search}%")
+                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                ->select('f.factura_no', 'f.total_amount')
+                ->selectRaw('sum(p.amount) as paidAmount')
+                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                ->where('f.activo', 'S')
+                ->where(function ($quary) use ($search) {
+                    $quary->where('f.factura_no', 'LIKE', "%{$search}%")
                         ->orWhere('f.total_amount', 'LIKE', "%{$search}%");
-                    })
-                    ->groupBy('f.factura_no')
-                    ->groupBy('f.total_amount')
-                    ->offset($start)
-                    ->limit($limit)
-                    ->get();
+                })
+                ->groupBy('f.factura_no')
+                ->groupBy('f.total_amount')
+                ->offset($start)
+                ->limit($limit)
+                ->get();
 
             $totalFiltered = collect($terms)->count();
         }
@@ -488,15 +483,15 @@ class FacturaController extends Controller
         $data = array();
         if (!empty($terms)) {
             foreach ($terms as $Key => $term) {
-                
+
                 $factura = DB::table('factura AS f')
-                                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                                ->select('f.id AS id','p.amount','f.total_amount As total_amount','f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome','c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.inv_status', 'c.id as client_id')
-                                ->where('f.activo', 'S')
-                                ->where('f.factura_no', $term->factura_no)
-                                ->first();
-                
+                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                    ->select('f.id AS id', 'p.amount', 'f.total_amount As total_amount', 'f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome', 'c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.inv_status', 'c.id as client_id')
+                    ->where('f.activo', 'S')
+                    ->where('f.factura_no', $term->factura_no)
+                    ->first();
+
                 /**
                  * For HTMl action option like edit and delete
                  */
@@ -509,7 +504,7 @@ class FacturaController extends Controller
                             <button class='dropdown-item text-center' type='submit'  style='background: transparent;
     border: none;'><i class='fa fa-trash fa-1x'></i> Delete</button>
                           </form>";
-                
+
                 $view = url('admin/create-Invoice-view-detail/' . encrypt($factura->id) . '/view');
                 $email = url('admin/create-Invoice-view-detail/' . $factura->id . '/email');
 
@@ -519,10 +514,10 @@ class FacturaController extends Controller
                  * -/End
                  */
                 if ($chk) {
-                    $email = "<li style='text-align:left'><a class='dropdown-item' href='{$email}' title='Enviar factura por e-mail para o cliente'>&nbsp;&nbsp;<i class='fa fa-envelope'></i> 
+                    $email = "<li style='text-align:left'><a class='dropdown-item' href='{$email}' title='Enviar factura por e-mail para o cliente'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
                                                         Email</a></li>";
                 } else {
-                    $email = "<li style='text-align:left'><a class='dropdown-item' href='javascript:void(0);' style='cursor: no-drop;' title='Client don`t have email'>&nbsp;&nbsp;<i class='fa fa-envelope'></i> 
+                    $email = "<li style='text-align:left'><a class='dropdown-item' href='javascript:void(0);' style='cursor: no-drop;' title='Client don`t have email'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
                                                     Email</a></li>";
                 }
 
@@ -534,12 +529,12 @@ class FacturaController extends Controller
                     $start++;
                     $nestedData['id'] = $start;
                 }
-                if($factura->cl_tipo == 2):
-                 $nestedData['name'] = '<div  style="font-size:15px;"  class="clinthead text-primary"><a  class="title text-primary" href="">' . htmlspecialchars($factura->cl_nome). " " . htmlspecialchars($factura->cl_sobrenome) . '</b></a>&nbsp;</div><p class="currenttittle"><i class="fa fa-calendar-check-o text-success"></i>&nbsp;' . date(LogActivity::commonDateFromatType(), strtotime($factura->inv_date)) . '</b></p>';
+                if ($factura->cl_tipo == 2):
+                    $nestedData['name'] = '<div  style="font-size:15px;"  class="clinthead text-primary"><a  class="title text-primary" href="">' . htmlspecialchars($factura->cl_nome) . " " . htmlspecialchars($factura->cl_sobrenome) . '</b></a>&nbsp;</div><p class="currenttittle"><i class="fa fa-calendar-check-o text-success"></i>&nbsp;' . date(LogActivity::commonDateFromatType(), strtotime($factura->inv_date)) . '</b></p>';
                 else:
-                 $nestedData['name'] = '<div  style="font-size:15px;"  class="clinthead text-primary"><a  class="title text-primary" href="">' . htmlspecialchars($factura->cl_instituicao). '</b></a>&nbsp;</div><p class="currenttittle"><i class="fa fa-calendar-check-o text-success"></i>&nbsp;' . date(LogActivity::commonDateFromatType(), strtotime($factura->inv_date)) . '</b></p>';
+                    $nestedData['name'] = '<div  style="font-size:15px;"  class="clinthead text-primary"><a  class="title text-primary" href="">' . htmlspecialchars($factura->cl_instituicao) . '</b></a>&nbsp;</div><p class="currenttittle"><i class="fa fa-calendar-check-o text-success"></i>&nbsp;' . date(LogActivity::commonDateFromatType(), strtotime($factura->inv_date)) . '</b></p>';
                 endif;
-                
+
                 $nestedData['total_amount'] = $term->total_amount;
                 $nestedData['paid_amount'] = ($term->paidAmount != '') ? $term->paidAmount : '0';
 
@@ -548,7 +543,7 @@ class FacturaController extends Controller
                 $nestedData['invoice_no'] = '<a href="' . $view . '" class="text-primary">' . $term->factura_no . '</a>';
                 $nestedData['status'] = $factura->inv_status;
 
-                
+
                 if ($isEdit == "1" || $isDelete == "1") {
 
                     $nestedData['options'] = $this->action([
@@ -558,7 +553,7 @@ class FacturaController extends Controller
                             'id' => $factura->id,
                             'action' => route('factura.destroy', $factura->id),
                         ]),
-                        'print' => url('admin/create-Invoice-view-detail/' . encrypt($factura->id). '/print'),
+                        'print' => url('admin/create-Invoice-view-detail/' . encrypt($factura->id) . '/print'),
                         'payment_recevie_modal' => collect([
                             'id' => $factura->id,
                             'action' => route('factura.show', $factura->id),
@@ -622,10 +617,10 @@ class FacturaController extends Controller
         //$advocate_id = $this->getLoginUserId();
 
         $totalData = DB::table('factura AS f')
-                // ->where('i.advocate_id', $advocate_id)
-                ->where('f.cliente_id', $client_id)
-                ->where('f.activo', 'S')
-                ->count();
+            // ->where('i.advocate_id', $advocate_id)
+            ->where('f.cliente_id', $client_id)
+            ->where('f.activo', 'S')
+            ->count();
 
         $totalFiltered = $totalData;
         $totalRec = $totalData;
@@ -636,20 +631,20 @@ class FacturaController extends Controller
 
         if (empty($request->input('search.value'))) {
             $terms = DB::table('factura AS f')
-                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                    ->select('f.factura_no', 'f.total_amount As total_amount')
-                    ->selectRaw('sum(p.amount) as paidAmount')
-                    ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                    //->where('i.advocate_id', $advocate_id)
-                    ->where('f.cliente_id', $client_id)
-                    ->where('f.activo', 'S')
-                    ->groupBy('f.factura_no')
-                    ->groupBy('f.total_amount')
-                    ->offset($start)
-                    ->limit($limit)
-                    ->orderBy($order, $dir)
-                    ->get();
+                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                ->select('f.factura_no', 'f.total_amount As total_amount')
+                ->selectRaw('sum(p.amount) as paidAmount')
+                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                //->where('i.advocate_id', $advocate_id)
+                ->where('f.cliente_id', $client_id)
+                ->where('f.activo', 'S')
+                ->groupBy('f.factura_no')
+                ->groupBy('f.total_amount')
+                ->offset($start)
+                ->limit($limit)
+                ->orderBy($order, $dir)
+                ->get();
         } else {
 
             /*
@@ -660,28 +655,28 @@ class FacturaController extends Controller
             $search = $request->input('search.value');
 
             $terms = DB::table('factura AS f')
-                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                    ->select('f.factura_no', 'f.total_amount As total_amount')
-                    ->selectRaw('sum(p.amount) as paidAmount')
-                    ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                    // ->where('i.advocate_id', $advocate_id)
-                    ->where('f.cliente_id', $client_id)
-                    ->where('f.activo', 'S')
-                    ->where(function ($quary) use ($search) {
-                        $quary->where('f.factura_no', 'LIKE', "%{$search}%")
+                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                ->select('f.factura_no', 'f.total_amount As total_amount')
+                ->selectRaw('sum(p.amount) as paidAmount')
+                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                // ->where('i.advocate_id', $advocate_id)
+                ->where('f.cliente_id', $client_id)
+                ->where('f.activo', 'S')
+                ->where(function ($quary) use ($search) {
+                    $quary->where('f.factura_no', 'LIKE', "%{$search}%")
                         ->orWhere('c.nome', 'LIKE', "%{$search}%")
                         ->orWhere('c.sobrenome', 'LIKE', "%{$search}%")
                         ->orWhere('c.instituicao', 'LIKE', "%{$search}%")
                         ->orWhere('f.total_amount', 'LIKE', "%{$search}%")
                         ->orWhere('f.inv_status', 'LIKE', "%{$search}%");
-                    })
-                    ->groupBy('f.factura_no')
-                    ->groupBy('f.total_amount')
-                    ->offset($start)
-                    ->limit($limit)
-                    ->orderBy($order, $dir)
-                    ->get();
+                })
+                ->groupBy('f.factura_no')
+                ->groupBy('f.total_amount')
+                ->offset($start)
+                ->limit($limit)
+                ->orderBy($order, $dir)
+                ->get();
 
 
             $totalFiltered = collect($terms)->count();
@@ -690,19 +685,19 @@ class FacturaController extends Controller
         $data = array();
         if (!empty($terms)) {
             foreach ($terms as $Key => $term) {
-                                
+
                 $factura = DB::table('factura AS f')
-                                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                                ->select('f.id AS id','p.amount','f.total_amount As total_amount','f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome','c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.inv_status', 'c.id AS client_id')
-                                ->where('f.activo', 'S')
-                                ->where('f.factura_no', $term->factura_no)
-                                ->first();
+                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                    ->select('f.id AS id', 'p.amount', 'f.total_amount As total_amount', 'f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome', 'c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.inv_status', 'c.id AS client_id')
+                    ->where('f.activo', 'S')
+                    ->where('f.factura_no', $term->factura_no)
+                    ->first();
                 /**
                  * For HTMl action option like edit and delete
                  */
                 $token = csrf_field();
-                
+
                 $action_delete = route('factura.destroy', $factura->id);
                 $delete = "<form action='{$action_delete}' method='post' onsubmit ='return  confirmDelete()'>
                 {$token}
@@ -729,10 +724,10 @@ class FacturaController extends Controller
                  * -/End
                  */
                 if ($chk) {
-                    $email = "<li style='text-align:left'><a class='dropdown-item' href='{$email}' title='Send invoice in email to client'>&nbsp;&nbsp;<i class='fa fa-envelope'></i> 
+                    $email = "<li style='text-align:left'><a class='dropdown-item' href='{$email}' title='Send invoice in email to client'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
                                                         Email</a></li>";
                 } else {
-                    $email = "<li style='text-align:left'><a class='dropdown-item' href='javascript:void(0);' style='cursor: no-drop;' title='Client don`t have email'>&nbsp;&nbsp;<i class='fa fa-envelope'></i> 
+                    $email = "<li style='text-align:left'><a class='dropdown-item' href='javascript:void(0);' style='cursor: no-drop;' title='Client don`t have email'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
                                                         Email</a></li>";
                 }
 
@@ -831,8 +826,8 @@ class FacturaController extends Controller
             }
         } else {
             $count = Cliente::where('email', $request->email)
-                    ->where('id', '<>', $request->id)
-                    ->count();
+                ->where('id', '<>', $request->id)
+                ->count();
             if ($count == 0) {
                 return 'true';
             } else {
@@ -861,14 +856,14 @@ class FacturaController extends Controller
         if (!empty($records)) {
 
             $detail = '<label  class="discount_text">Billed To:- </label><br>';
-            
-            $detail .= '<p style="color:#333;">' . htmlspecialchars ($records->full_name). '</p>';
+
+            $detail .= '<p style="color:#333;">' . htmlspecialchars($records->full_name) . '</p>';
             if ($records->endereco != '')
-                $detail .= '<p style="color:black;">' . htmlspecialchars ($records->endereco) . '</p>';
+                $detail .= '<p style="color:black;">' . htmlspecialchars($records->endereco) . '</p>';
             if ($records->email != '')
-                $detail .= '<p style="color:black;">' . htmlspecialchars ($records->email) . '</p>';
+                $detail .= '<p style="color:black;">' . htmlspecialchars($records->email) . '</p>';
             if ($records->telefone != '')
-                $detail .= '<p style="color:black;">' . htmlspecialchars ($records->telefone) . '</p>';
+                $detail .= '<p style="color:black;">' . htmlspecialchars($records->telefone) . '</p>';
         }
         $data['client_detail'] = $detail;
 
@@ -876,10 +871,10 @@ class FacturaController extends Controller
         $data['invoice_no'] = $this->generateInvoice();
 
         $taxs = Imposto::where('activo', 'S')->where('nome', $tax)
-                        ->where(function ($tax) use ($advocate_id) {
-                            $tax->where('advocate_id', 0)
-                            ->orWhere('advocate_id', $advocate_id);
-                        })->get();
+            ->where(function ($tax) use ($advocate_id) {
+                $tax->where('advocate_id', 0)
+                    ->orWhere('advocate_id', $advocate_id);
+            })->get();
 
         $thml = '<option value="0" taxsepara="" taxrate="0.00">' . $tax . ' 0 %</option>';
         if (!empty($taxs) && count($taxs)) {
@@ -896,7 +891,7 @@ class FacturaController extends Controller
 
     public function storeInvoice(Request $request)
     {
-        
+
         if (empty($request->invoice_items)) {
             Session::flash('error', "Something want wrong.");
             return back();
@@ -906,7 +901,7 @@ class FacturaController extends Controller
             'client_id' => 'required',
             'inc_Date' => 'required',
             'due_Date' => 'required',
-                
+
         ]);
 
         // $advocate_id = $this->getLoginUserId();
@@ -918,20 +913,19 @@ class FacturaController extends Controller
         }
 
         $factura = new Factura();
-        
+
         $factura->cliente_id = $request->client_id;
         $factura->sub_total_amount = $request->subTotal;
         $factura->tax_amount = $request->taxVal;
         $factura->total_amount = $request->total;
         $factura->due_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->due_Date)));
         $factura->inv_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->inc_Date)));
-
+        $factura->agenda_id = $request->agenda_id;
+        $factura->status = 'pendente';
         $factura->remarks = $request->note;
         $factura->factura_no = $request->invoice_id;
-        // $invoice->invoice_created_by = "1";
         $factura->invoice_created_by = auth()->user()->id;
         $factura->tax_type = $request->tex_type;
-        // $invoice->json_content = $request->jsonContent;
         $factura->tax_id = $request->tax;
         $factura->save();
 
@@ -1018,8 +1012,8 @@ class FacturaController extends Controller
 
         Mail::send('pdf.invoice', $data, function ($message) use ($pdf, $input) {
             $message
-                    ->from($input['from'], $input['title'])
-                    ->subject($input['subject']);
+                ->from($input['from'], $input['title'])
+                ->subject($input['subject']);
             $message->to($input['to']);
             $message->attachData($pdf->output(), $input['pdfName']);
             // $message->attach($pdf->output());
@@ -1102,10 +1096,10 @@ class FacturaController extends Controller
     public function paymentHistory($inv_id = null)
     {
         $data['getPaymentHistory'] = DB::table('payment_receiveds AS pr')
-                ->leftJoin('factura AS inv', 'pr.factura_id', '=', 'inv.id')
-                ->where('pr.factura_id', decrypt($inv_id))
-                ->orderby('pr.id', 'DESC')
-                ->get();
+            ->leftJoin('factura AS inv', 'pr.factura_id', '=', 'inv.id')
+            ->where('pr.factura_id', decrypt($inv_id))
+            ->orderby('pr.id', 'DESC')
+            ->get();
         // return view('admin.invoice.payment-history',$data);
 
         $html = view('admin.factura.payment-history', $data)->render();
@@ -1114,15 +1108,15 @@ class FacturaController extends Controller
 
     public function billHistory($pr_id = null)
     {
-        
+
         $advocate_id = $this->getLoginUserId();
-        
+
         $data['getPaymentHistory'] = DB::table('payment_receiveds AS pr')
-                ->leftJoin('factura AS inv', 'pr.invoice_id', '=', 'inv.id')
-                ->where('pr.advocate_id', $advocate_id)
-                ->where('pr.id', $pr_id)
-                ->orderby('pr.id', 'DESC')
-                ->get();
+            ->leftJoin('factura AS inv', 'pr.invoice_id', '=', 'inv.id')
+            ->where('pr.advocate_id', $advocate_id)
+            ->where('pr.id', $pr_id)
+            ->orderby('pr.id', 'DESC')
+            ->get();
         return view('admin.factura.payment-history', $data);
     }
 
@@ -1134,16 +1128,16 @@ class FacturaController extends Controller
      */
     public function destroy($id)
     {
-        
+
         $factura = Factura::findOrFail($id);
         $factura->activo = 'N';
 
         $factura->save();
 
         return response()->json([
-                    'success' => true,
-                    'message' => 'Factura eliminada.'
-                        ], 200);
+            'success' => true,
+            'message' => 'Factura eliminada.'
+        ], 200);
         // Session::flash('success',"Invoice deleted successfully.");
         // return redirect()->route('invoice.index');
     }
@@ -1160,9 +1154,9 @@ class FacturaController extends Controller
             }
         } else {
             $count = Factura::where('factura_no', '=', $data)
-                    ->where('id', '<>', $id)
-                    // ->where('advocate_id',$advocate_id)
-                    ->count();
+                ->where('id', '<>', $id)
+                // ->where('advocate_id',$advocate_id)
+                ->count();
             if ($count == 0) {
                 return 'true';
             } else {
@@ -1178,15 +1172,36 @@ class FacturaController extends Controller
         $digits_length = strlen($no);
         $i = 0;
         $str = array();
-        $words = array(0 => '', 1 => 'one', 2 => 'two',
-            3 => 'three', 4 => 'four', 5 => 'five', 6 => 'six',
-            7 => 'seven', 8 => 'eight', 9 => 'nine',
-            10 => 'ten', 11 => 'eleven', 12 => 'twelve',
-            13 => 'thirteen', 14 => 'fourteen', 15 => 'fifteen',
-            16 => 'sixteen', 17 => 'seventeen', 18 => 'eighteen',
-            19 => 'nineteen', 20 => 'twenty', 30 => 'thirty',
-            40 => 'forty', 50 => 'fifty', 60 => 'sixty',
-            70 => 'seventy', 80 => 'eighty', 90 => 'ninety');
+        $words = array(
+            0 => '',
+            1 => 'one',
+            2 => 'two',
+            3 => 'three',
+            4 => 'four',
+            5 => 'five',
+            6 => 'six',
+            7 => 'seven',
+            8 => 'eight',
+            9 => 'nine',
+            10 => 'ten',
+            11 => 'eleven',
+            12 => 'twelve',
+            13 => 'thirteen',
+            14 => 'fourteen',
+            15 => 'fifteen',
+            16 => 'sixteen',
+            17 => 'seventeen',
+            18 => 'eighteen',
+            19 => 'nineteen',
+            20 => 'twenty',
+            30 => 'thirty',
+            40 => 'forty',
+            50 => 'fifty',
+            60 => 'sixty',
+            70 => 'seventy',
+            80 => 'eighty',
+            90 => 'ninety'
+        );
         $digits = array('', 'hundred', 'thousand', 'lakh', 'crore');
         while ($i < $digits_length) {
             $divider = ($i == 2) ? 10 : 100;
@@ -1196,7 +1211,7 @@ class FacturaController extends Controller
             if ($number) {
                 $plural = (($counter = count($str)) && $number > 9) ? 's' : null;
                 $hundred = ($counter == 1 && $str[0]) ? ' and ' : null;
-                $str [] = ($number < 21) ? $words[$number] . ' ' . $digits[$counter] . $plural . ' ' . $hundred : $words[floor($number / 10) * 10] . ' ' . $words[$number % 10] . ' ' . $digits[$counter] . $plural . ' ' . $hundred;
+                $str[] = ($number < 21) ? $words[$number] . ' ' . $digits[$counter] . $plural . ' ' . $hundred : $words[floor($number / 10) * 10] . ' ' . $words[$number % 10] . ' ' . $digits[$counter] . $plural . ' ' . $hundred;
             } else
                 $str[] = null;
         }
@@ -1204,5 +1219,4 @@ class FacturaController extends Controller
         $paise = ($decimal) ? "." . ($words[$decimal / 10] . " " . $words[$decimal % 10]) . ' Paise' : '';
         return ($Rupees ? $Rupees . 'Rupees ' : '') . $paise;
     }
-
 }
