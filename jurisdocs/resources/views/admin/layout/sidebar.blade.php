@@ -27,6 +27,8 @@
                         <li><a href="{{ route('cliente.consulta.index') }}">{{ __('form consulta') }}</a>
                     </ul>
                 </li>
+
+                <li><a href="{{ url('admin/facturaz/cliente') }}"><i class="fa fa-gavel"></i> {{ __('Invoice') }}</a></li>
             @endif
 
             @can('task_list')
@@ -96,6 +98,7 @@
                     </ul>
                 </li>
             @endif
+
 
             @if (auth()->user()->can('expense_type_list') || auth()->user()->can('expense_list'))
                 <li><a><i class="fa fa-money"></i> {{ __('Expenses') }} <span class="fa fa-chevron-down"></span></a>

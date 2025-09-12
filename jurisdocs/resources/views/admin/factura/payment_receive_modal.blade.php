@@ -14,31 +14,34 @@
                         <label for="fullname">Valor <span class="text-danger">*</span></label>
                         <input type="text" placeholder="" class="form-control">
                     </div>
-                    <div class="col-md-12 col-sm-12 col-xs-12 form-group">
-                        <label for="fullname">Data de recebimento <span class="text-danger">*</span></label>
-                        <input type="text" placeholder="" class="form-control">
-                    </div>
+
                     <div class="col-md-12 col-sm-12 col-xs-12 form-group">
                         <label for="fullname">Forma de pagamento <span class="text-danger">*</span></label>
                         <select class="form-control">
-
-                            <option>Dinheiro</option>
-                            <option>Cheque</option>
+                            <option>Deposito</option>
+                            <option>Transferência</option>
 
                         </select>
                     </div>
                     <div class="col-md-12 col-sm-12 col-xs-12 form-group">
-                        <label for="fullname">N&uacute;mero de refer&ecirc;ncia <span class="text-danger"></span></label>
+                        <label for="fullname">N&uacute;mero de refer&ecirc;ncia <span
+                                class="text-danger"></span></label>
                         <input type="text" class="form-control">
                     </div>
                     <div class="col-md-12 col-sm-12 col-xs-12 form-group">
-                        <label for="fullname">{{__('Note')}} <span class="text-danger"></span></label>
+                        <label>Comprovativo (PDF) <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="comprovativo" name="comprovativo" accept=".pdf"
+                            required>
+                        <small class="text-muted">Apenas arquivos PDF são aceitos (máx. 10MB)</small>
+                    </div>
+                    <div class="col-md-12 col-sm-12 col-xs-12 form-group">
+                        <label for="fullname">{{ __('Note') }} <span class="text-danger"></span></label>
                         <input type="text" class="form-control">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">{{__('Close')}}</button>
-                    <button type="button" class="btn btn-primary">{{__('Save')}}</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-primary">{{ __('Save') }}</button>
                 </div>
 
             </div>

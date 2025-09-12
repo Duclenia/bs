@@ -8,10 +8,10 @@
 
         <div class="title_right">
             <div class="form-group pull-right top_search">
-                @can('invoice_add')
+               {{--  @can('invoice_add')
                     <a href="{{ url('admin/create-Invoice-view') }}" class="btn btn-primary"><i class="fa fa-plus"></i>
                         Nova factura</a>
-                @endcan
+                @endcan --}}
 
             </div>
         </div>
@@ -42,7 +42,7 @@
         </div>
 
     </div>
-    <div id="load-modal"></div>
+  <div id="load-modal"></div>
 
     <!-- /page content end  -->
     <div class="modal fade" id="modal-common" tabindex="-1" role="dialog">
@@ -54,10 +54,10 @@
     </div>
 
     <input type="hidden" name="token-value" id="token-value" value="{{ csrf_token() }}">
-    <input type="hidden" name="invoice-list" id="invoice-list" value="{{ url('admin/invoice-list') }}">
+    <input type="hidden" name="invoice-list-client" id="invoice-list-client" value="{{ url('admin/invoice-list-client') }}">
 
 @endsection
 
 @push('js')
-    <script src="{{ asset('assets/js/factura/invoice-datatable.js') }}"></script>
+    <script src="{{ asset('assets/js/factura/invoice_cliente-datatable.js') }}"></script>
 @endpush

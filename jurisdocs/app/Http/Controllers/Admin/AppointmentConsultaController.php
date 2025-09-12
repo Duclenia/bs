@@ -87,6 +87,34 @@ class AppointmentConsultaController extends Controller
         $agendaReuniao->vc_caminho_documento = $documentPath;
         $agendaReuniao->save();
 
+        // Criar factura se houver custo
+        if ($agendaReuniao && $request->custo > 0) {
+            $facturaController = new FacturaController();
+            $facturaData = [
+                'client_id' => $a->cliente_id,
+                'agenda_id' => $a->id,
+                'inc_Date' => $request->date,
+                'due_Date' => date('Y-m-d', strtotime('+30 days')),
+                'subTotal' => $request->custo,
+                'total' => $request->custo,
+                'taxVal' => 0,
+                'tex_type' => 'none',
+                'tax' => 0,
+                'note' => 'Factura gerada automaticamente para consulta',
+                'invoice_id' => $facturaController->generateInvoice(),
+                'invoice_items' => [[
+                    'description' => 'Consulta - ' . $agendaReuniao->vc_area,
+                    'services' => 1,
+                    'rate' => $request->custo,
+                    'qty' => 1,
+                    'amount' => $request->custo
+                ]]
+            ];
+
+            $facturaRequest = new Request($facturaData);
+            $facturaController->storeInvoice($facturaRequest);
+        }
+
         return redirect()->route('consulta.index')->with('success', "Agendamento de consulta criado.");
     }
 
@@ -287,12 +315,12 @@ class AppointmentConsultaController extends Controller
                         'view' => route('consulta.show', encrypt($term->id)),
                         'edit' => route('consulta.edit', encrypt($term->id)),
                         'edit_permission' => $isEdit,
-                        'upload_comprovativo' => collect(['id' => $term->id])
+                      'documento' => route('agenda.facturas', encrypt($term->id))
                     ]);
                 } else {
                     $nestedData['action'] = $this->action([
                         'view' => route('consulta.show', encrypt($term->id)),
-                        'upload_comprovativo' => collect(['id' => $term->id])
+                         'documento' => route('agenda.facturas', encrypt($term->id))
                     ]);
                 }
 

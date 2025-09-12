@@ -14,7 +14,6 @@ class CreateHorarioAdvogadosTable extends Migration
     public function up()
     {
         Schema::create('horario_advogados', function (Blueprint $table) {
-
             $table->id();
             $table->enum('day_of_week', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             $table->time('start_time')->nullable();        // Horário de início

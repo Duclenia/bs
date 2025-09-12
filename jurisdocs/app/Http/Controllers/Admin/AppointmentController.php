@@ -2,24 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\AgendamentoConsulta;
-use App\AgendamentoReuniao;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreAppointment;
 use App\Http\Controllers\Controller;
 use App\Models\{Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
 use App\Helpers\LogActivity;
-use App\Http\Requests\StoreClient;
-use App\Mail\MeetingCreatedMail;
-use App\Notifications\ActivityNotification;
+
 use App\Services\ZoomService;
-use Illuminate\Support\Facades\Notification;
 use App\Traits\DatatablTrait;
 use Gate;
 use DB;
-use Illuminate\Support\Facades\Mail;
-
-use function PHPSTORM_META\type;
 
 class AppointmentController extends Controller
 {
@@ -30,35 +22,27 @@ class AppointmentController extends Controller
     private $agendaConsulta;
     private $clienteAgenda;
 
-    public function __construct(Cliente $cliente, ClienteController $client, AppointmentReuniaoController $ar, AppointmentConsultaController $ac)
-    {
+
+    public function __construct(
+        Cliente $cliente,
+        ClienteController $client,
+        AppointmentReuniaoController $ar,
+        AppointmentConsultaController $ac
+
+    ) {
         $this->cliente = $cliente;
         $this->agendaReuniao = $ar;
         $this->agendaConsulta = $ac;
         $this->clienteAgenda = $client;
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
         if (Gate::denies('appointment_list'))
             return back();
-
-
         return view('admin.appointment.appointment');
     }
 
-
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         if (Gate::denies('appointment_add'))
@@ -72,6 +56,7 @@ class AppointmentController extends Controller
 
         return view('admin.agendamento.reuniao.appointment_create', $data);
     }
+
     public function create_consulta()
     {
         if (Gate::denies('appointment_add'))
@@ -88,21 +73,12 @@ class AppointmentController extends Controller
 
     public function getMobileno(Request $request)
     {
-
         $data = $this->cliente->findOrFail($request->id);
-
         return $data;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \App\Http\Requests\StoreAppointment $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(StoreAppointment $request)
     {
-
         try {
 
             $agenda = $this->criarAgenda($request);
@@ -115,7 +91,6 @@ class AppointmentController extends Controller
 
             //Mail::to($request->email)->send(new MeetingCreatedMail($agenda));
         } catch (\Exception $e) {
-            // Em produção, use log ao invés de dd()
 
             return back()->with('error', 'Erro ao criar agenda.');
         }
@@ -125,10 +100,8 @@ class AppointmentController extends Controller
     {
 
         $agenda = new Agenda();
-
         $agenda->cliente_id = $request->type == "new"  ? $this->clienteAgenda->storeCliente($request)
             : $request->exists_client;
-
         $agenda->email = $request->email;
         $agenda->telefone = $request->mobile;
         $agenda->data = date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->date)));
@@ -141,18 +114,12 @@ class AppointmentController extends Controller
 
         if ($request->vc_plataforma == 'zoom') {
             $zoom = new ZoomService();
-            $data = $zoom->createMeeting(
-                $request->vc_tipo ?: 'reunião',
-                "{$request->date}T{$request->time}:00",
-                60
-            );
-
+            $data = $zoom->createMeeting($request->vc_tipo ?: 'reunião', "{$request->date}T{$request->time}:00", 60);
             $agenda->join_url = $data['join_url'];
             $agenda->start_url = $data['start_url'];
         }
 
         $agenda->save();
-
         return $agenda;
     }
 
@@ -176,8 +143,8 @@ class AppointmentController extends Controller
 
         $totalData = DB::table('agenda AS a')
             ->leftJoin('cliente AS cl', 'cl.id', '=', 'a.cliente_id')
-            ->select('a.id AS id', 'a.activo AS status', 'a.telefone AS mobile', 'a.data AS date', 'a.nome AS name', 'a.nome AS appointment_name', 'cl.nome AS nome_cliente', 'cl.sobrenome AS sobrenome_cliente', 'cl.instituicao', 'cl.tipo AS tipo_cliente', 'a.cliente_id AS client_id', 'a.type As type')
             ->count();
+
         $totalRec = $totalData;
 
         $limit = $request->input('length');
@@ -320,13 +287,6 @@ class AppointmentController extends Controller
         return view('admin.appointment.appointment_edit', $data);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \App\Http\Requests\StoreAppointment $request
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(StoreAppointment $request, $id)
     {
 
@@ -346,8 +306,6 @@ class AppointmentController extends Controller
 
         ]);
 
-
-
         return redirect()->route('agenda.index')->with('success', "Agenda actualizada.");
     }
 
@@ -360,20 +318,13 @@ class AppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id) {}
 
+    // encaminhar agendamento para outro advogado
     public function encaminharAgendamento(Request $request)
     {
         try {
             DB::beginTransaction();
-
-            // Atualizar a agenda com o novo advogado, data e horário
             $agenda = Agenda::findOrFail($request->agendamento_id);
             $agenda->update([
                 'advogado_id' => $request->novo_advogado_id,
@@ -381,7 +332,6 @@ class AppointmentController extends Controller
                 'hora' => $request->novo_horario,
                 'activo' => 'TO FORWARD'
             ]);
-
             DB::commit();
 
             return response()->json([

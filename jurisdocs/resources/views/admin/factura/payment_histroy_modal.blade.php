@@ -18,7 +18,7 @@
                                 <th>Valor</th>
                                 <th>Data de recebimento</th>
                                 <th>Forma de pagamento</th>
-                                <th>N&uacute;mero de refer&ecirc;ncia</th>
+                                <th>Comprovativo</th>
                                 <th>{{__('Note')}}</th>
                             </tr>
                             </thead>

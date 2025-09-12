@@ -8,10 +8,10 @@
 
         <div class="title_right">
             <div class="form-group pull-right top_search">
-                @can('invoice_add')
-                    <a href="{{ url('admin/create-Invoice-view') }}" class="btn btn-primary"><i class="fa fa-plus"></i>
-                        Nova factura</a>
-                @endcan
+                @if ($agenda_info)
+                    <p class="text-muted">Reunião de
+                        {{ date('d/m/Y H:i', strtotime($agenda_info->data . ' ' . $agenda_info->hora)) }}</p>
+                @endif
 
             </div>
         </div>
@@ -55,6 +55,7 @@
 
     <input type="hidden" name="token-value" id="token-value" value="{{ csrf_token() }}">
     <input type="hidden" name="invoice-list" id="invoice-list" value="{{ url('admin/invoice-list') }}">
+    <input type="hidden" value="{{ $agenda_id }}" id="agenda_id" name="agenda_id">
 
 @endsection
 

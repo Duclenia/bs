@@ -30,4 +30,8 @@ class Agenda extends Model
     {
         return $this->belongsTo(User::class, 'advogado_id');
     }
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_id');
+    }
 }

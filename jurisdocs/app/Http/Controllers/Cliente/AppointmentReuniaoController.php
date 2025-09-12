@@ -50,16 +50,16 @@ class AppointmentReuniaoController extends Controller
                 ->whereNotNull('advogado_id')
                 ->orderBy('id', 'desc')
                 ->value('advogado_id');
-                
+
             $data['advogado_list'] = DB::table('admin AS a')
                 ->leftJoin('users AS u', 'a.user_id', '=', 'u.id')
                 ->leftJoin('pessoasingular AS p', 'p.id', '=', 'a.pessoasingular_id')
                 ->where('user_type', 'ADV')
                 ->select('u.*', 'p.nome as nome', 'p.sobrenome as sobrenome')
                 ->get();
-                
+
             $data['advogado_selecionado'] = $advogadoCliente;
-            
+
             return view('cliente.appointment.reuniao.appointment_create', $data);
         } else
             return back();
@@ -256,13 +256,9 @@ class AppointmentReuniaoController extends Controller
                 $nestedData['vc_entidade'] = htmlspecialchars($term->vc_entidade);
 
                 $actionData = [
-                    'view' => route('cliente.reuniao.show', encrypt($term->id))
+                    'view' => route('cliente.reuniao.show', encrypt($term->id)),
+                    'documento' => route('agenda.facturas', encrypt($term->id))
                 ];
-
-                // Só mostrar upload se não tiver comprovativo
-                if (empty($term->vc_caminho_pdf)) {
-                    $actionData['upload_comprovativo'] = collect(['id' => $term->id]);
-                }
 
                 $nestedData['action'] = $this->action($actionData);
 

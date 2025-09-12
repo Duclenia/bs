@@ -155,13 +155,17 @@ Route::group(['prefix' => 'admin', 'namespace' => 'Admin', 'middleware' => ['aut
     Route::resource('factura', 'FacturaController');
     Route::post('invoice-list', 'FacturaController@InvoiceList')->name('invoice-list');
     Route::post('invoice-list-client', 'FacturaController@InvoiceClientList')->name('invoice-list-client');
+    Route::get('agenda-facturas/{agenda_id}', 'FacturaController@agendaFacturas')->name('agenda.facturas');
+    Route::post('invoice-list-agenda', 'FacturaController@InvoiceAgendaList')->name('invoice-list-agenda');
     Route::get('show_payment_history/{id}', 'FacturaController@paymentHistory')->name('paymentHistory');
+    Route::post('payment/update-status', 'FacturaController@updateStatus')->name('admin.payment.update-status');
     Route::get('create-Invoice-view/{id?}', 'FacturaController@CreateInvoiceView');
     Route::get('create-Invoice-view-detail/{id}/{p}', 'FacturaController@CreateInvoiceViewDetail');
     Route::post('getClientDetailById', 'FacturaController@getClientDetailById')->name('getClientDetailById');
     Route::post('add_invoice', 'FacturaController@storeInvoice')->name('store_invoice');
     Route::post('edit_invoice', 'FacturaController@editInvoice')->name('edit_invoice');
 
+    Route::get('facturaz/cliente', 'FacturaController@index_cliente')->name('factura.cliente');
 
     //------------------Agenda----------------------------//
     Route::resource('agenda', 'AppointmentController');

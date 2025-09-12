@@ -298,9 +298,7 @@ class ClienteController extends Controller
             return back();
 
         $cliente = new Cliente;
-
         $documento = new Documento();
-
         $user = new User();
 
         $codigo_verificacao = rand(1111, 9999);
@@ -342,7 +340,7 @@ class ClienteController extends Controller
         $cliente->nif = addslashes($request->nif);
 
         if ($request->new_client == 2) {
-         
+
             $cliente->nome = addslashes($request->f_name);
             $cliente->sobrenome = addslashes($request->l_name);
             $cliente->estado_civil = $request->estado_civil;
@@ -406,17 +404,12 @@ class ClienteController extends Controller
             }
         }
 
-        if ($cliente->telefone)
-             $this->enviarSMS($cliente->telefone, $codigo_verificacao);
+        /* if ($cliente->telefone)
+             $this->enviarSMS($cliente->telefone, $codigo_verificacao); */
 
             return $cliente->id;
     }
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function show($id)
     {
         $data['single'] = array();
@@ -429,12 +422,6 @@ class ClienteController extends Controller
         return view('admin.cliente.view.client_detail', $data);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
         $user = auth()->user();

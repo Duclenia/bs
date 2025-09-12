@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Session;
-use DB;
+use Illuminate\Support\Facades\DB;
 use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\ItemFactura;
@@ -21,6 +21,7 @@ use PDF;
 use Mail;
 use App\Traits\DatatablTrait;
 use App\Models\Mailsetup;
+use Illuminate\Contracts\Session\Session as SessionSession;
 
 class FacturaController extends Controller
 {
@@ -43,7 +44,6 @@ class FacturaController extends Controller
 
         $records = DB::table('cliente')
             ->where('id', $id)
-            // ->where('advocate_id',$advocate_id)
             ->first();
         $detail = '';
         if (!empty($records)) {
@@ -94,15 +94,13 @@ class FacturaController extends Controller
     {
         return view('admin.factura.invoice');
     }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function index_cliente()
     {
 
+        return view('admin.factura.invoice_cliente');
+    }
+    public function create()
+    {
         $advocate_id = $this->getLoginUserId();
 
         $data['client_list'] = Cliente::where('activo', 'S')->where('id', $advocate_id)->orderBy('nome', 'asc')->get();
@@ -120,7 +118,6 @@ class FacturaController extends Controller
         $thml .= '</select>';
         $data['tax'] = "'" . $thml . "'";
 
-
         return view('admin.factura.invoice_menu', $data);
     }
 
@@ -132,8 +129,6 @@ class FacturaController extends Controller
         if (!$user->can('invoice_add'))
             return back();
 
-
-        // $advocate_id = $this->getLoginUserId();
         $data['client_list'] = Cliente::where('activo', 'S')
             ->orderBy('nome', 'asc')
             ->get();
@@ -150,87 +145,23 @@ class FacturaController extends Controller
         return view('admin.factura.invoice_create', $data);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function updateStatusFatura($invoice_id, $status)
     {
-        $getInvoice_Detail = Factura::findOrFail($request->invoice_id);
-        $receiptNo = $this->generateReceiptNo();
-
-        $paymentReceived = new PaymentReceived();
-        $paymentReceived->cliente_id = $getInvoice_Detail->cliente_id;
-        $paymentReceived->factura_id = $request->invoice_id;
-        $paymentReceived->receipt_number = $receiptNo;
-        $paymentReceived->amount = $request->amount;
-        $paymentReceived->receiving_date = date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->receive_date)));
-        $paymentReceived->cheque_date = (!empty($request->cheque_date)) ? date('Y-m-d H:i:s', strtotime(LogActivity::commonDateFromat($request->cheque_date))) : null;
-        $paymentReceived->payment_type = $request->method;
-        $paymentReceived->reference_number = $request->referance_number;
-        $paymentReceived->note = $request->note;
-        $paymentReceived->status = 'pendente';
-        $paymentReceived->payment_received_by = auth()->user()->id;
-
-        $paymentReceived->save();
-
-        //change status
-
-        $t = DB::table('factura AS f')
-            ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-            ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-            ->select('f.id', 'p.amount', 'f.inv_date', 'c.nome')
-            ->selectRaw('sum(p.amount) as paidAmount')
-            ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-            //->where('i.advocate_id', $advocate_id)
-            ->where('f.id', $request->invoice_id)
-            ->groupBy('p.factura_id')
-            ->get();
-
-        $paidAmount = 0;
-        $dueAmount = 0;
-        if (isset($t[0]) && !empty($t[0])) {
-            $dueAmount = $t[0]->dueAmount;
-            if ($t[0]->paidAmount == null)
-                $paidAmount = 0;
+        if ($status == 'aprovado') {
+            $factura = Factura::findOrFail($invoice_id);
+            $factura->status = 'pago';
+        }
+        if ($status == 'rejeitado') {
+            $factura = Factura::findOrFail($invoice_id);
+            $factura->status = 'cancelado';
         } else {
-            $paidAmount = $t[0]->paidAmount;
+            $status = Factura::findOrFail($invoice_id);
+            $status->status = "Comprovativo enviado";
         }
 
-        if ($paidAmount < $dueAmount) {
-            $status = Factura::find($request->invoice_id);
-            $status->inv_status = "Partially Paid";
-            $status->save();
-        } elseif ($paidAmount >= $dueAmount) {
-            $status = Factura::findOrFail($request->invoice_id);
-            $status->inv_status = "Paid";
-            $status->save();
-        }
-
-        echo 'true';
+        $status->save();
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        $data['invoice_id'] = $id;
-        $html = view('admin.factura.modal_invoice_paid', $data)->render();
-        return response()->json(['html' => $html], 200);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
 
@@ -262,7 +193,7 @@ class FacturaController extends Controller
 
         $check = $this->check_invoice_exits($request->invoice_id, $request->invoice_id);
         if ($check == "false") {
-            Session::flash('error', "Faild to data");
+
 
             return redirect()->route('factura.index');
         }
@@ -302,7 +233,6 @@ class FacturaController extends Controller
 
                 $itemFactura->factura_id = $factura->id;
                 $itemFactura->item_descricao = $value['description'];
-                // $iteams->hsn = $value['hsn'];
                 $itemFactura->servico_id = $value['services'];
                 $itemFactura->item_rate = $value['rate'];
                 $itemFactura->iteam_qty = $value['qty'];
@@ -310,18 +240,9 @@ class FacturaController extends Controller
                 $itemFactura->save();
             }
         }
-
-        Session::flash('success', "Factura actualizada.");
         return redirect()->route('factura.index');
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @param  int $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, $id) {}
 
     public function CreateInvoiceViewDetail($id, $p)
@@ -383,7 +304,6 @@ class FacturaController extends Controller
                     $message->to($input['to']);
                     $message->attachData($pdf->output(), $input['pdfName']);
                 });
-
                 Session::flash('success', "A factura foi enviada com sucesso para o e-mail do cliente.");
                 return back();
             } else {
@@ -396,9 +316,7 @@ class FacturaController extends Controller
     public function checkClientEmailExits($id)
     {
         $cliente = Cliente::findOrFail($id);
-
         if ($cliente->email == "") {
-
             return false;
         } else {
             return true;
@@ -407,9 +325,7 @@ class FacturaController extends Controller
 
     public function InvoiceList(Request $request)
     {
-
         $user = auth()->user();
-
         $isEdit = $user->can('invoice_edit');
         $isDelete = $user->can('invoice_delete');
 
@@ -428,7 +344,6 @@ class FacturaController extends Controller
         );
 
         $totalData = DB::table('factura AS f')
-            ->where('f.activo', 'S')
             ->count();
 
         $totalFiltered = $totalData;
@@ -439,20 +354,34 @@ class FacturaController extends Controller
         $dir = $request->input('order.0.dir');
 
         if (empty($request->input('search.value'))) {
-            $terms = DB::table('factura AS f')
-                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                ->select('f.factura_no', 'f.total_amount')
-                ->selectRaw('sum(p.amount) as paidAmount')
-                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                ->where('f.activo', 'S')
-                ->groupBy('f.factura_no')
-                ->groupBy('f.total_amount')
-                ->offset($start)
-                ->limit($limit)
-                ->get();
-        } else {
+            if ($request->agenda_id) {
+                $terms = DB::table('factura AS f')
+                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                    ->select('f.factura_no', 'f.total_amount')
+                    ->selectRaw('sum(p.amount) as paidAmount')
+                    ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                    ->where('f.agenda_id', $request->agenda_id)
+                    ->groupBy('f.factura_no')
+                    ->groupBy('f.total_amount')
+                    ->offset($start)
+                    ->limit($limit)
+                    ->get();
+            } else {
 
+                $terms = DB::table('factura AS f')
+                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                    ->select('f.factura_no', 'f.total_amount')
+                    ->selectRaw('sum(p.amount) as paidAmount')
+                    ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                    ->groupBy('f.factura_no')
+                    ->groupBy('f.total_amount')
+                    ->offset($start)
+                    ->limit($limit)
+                    ->get();
+            }
+        } else {
             /*
               |--------------------------------------------
               | For table search filter from frontend site inside two table namely courses and courseterms.
@@ -487,8 +416,210 @@ class FacturaController extends Controller
                 $factura = DB::table('factura AS f')
                     ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
                     ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                    ->select('f.id AS id', 'p.amount', 'f.total_amount As total_amount', 'f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome', 'c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.inv_status', 'c.id as client_id')
+                    ->select('f.id AS id', 'p.amount', 'f.total_amount As total_amount', 'f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome', 'c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.status', 'c.id as client_id')
                     ->where('f.activo', 'S')
+                    ->where('f.factura_no', $term->factura_no)
+                    ->first();
+
+                /**
+                 * For HTMl action option like edit and delete
+                 */
+                $token = csrf_field();
+                $clientLink = url('admin/client-account-list/' . $factura->client_id);
+                $action_delete = route('factura.destroy', $factura->id);
+                $delete = "<form action='{$action_delete}' method='post' onsubmit ='return  confirmDelete()'>
+                {$token}
+                            <input name='_method' type='hidden' value='DELETE'>
+                            <button class='dropdown-item text-center' type='submit'  style='background: transparent;
+    border: none;'><i class='fa fa-trash fa-1x'></i> Delete</button>
+                          </form>";
+
+                $view = url('admin/create-Invoice-view-detail/' . encrypt($factura->id) . '/view');
+                $email = url('admin/create-Invoice-view-detail/' . $factura->id . '/email');
+
+                $chk = $this->checkClientEmailExits($factura->client_id);
+
+                /**
+                 * -/End
+                 */
+                if ($chk) {
+                    $email = "<li style='text-align:left'><a class='dropdown-item' href='{$email}' title='Enviar factura por e-mail para o cliente'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
+                                                        Email</a></li>";
+                } else {
+                    $email = "<li style='text-align:left'><a class='dropdown-item' href='javascript:void(0);' style='cursor: no-drop;' title='Client don`t have email'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
+                                                    Email</a></li>";
+                }
+
+                if (empty($request->input('search.value'))) {
+                    $final = $totalRec - $start;
+                    $nestedData['id'] = $final;
+                    $totalRec--;
+                } else {
+                    $start++;
+                    $nestedData['id'] = $start;
+                }
+                if ($factura->cl_tipo == 2):
+                    $nestedData['name'] = '<div  style="font-size:15px;"  class="clinthead text-primary"><a  class="title text-primary" href="">' . htmlspecialchars($factura->cl_nome) . " " . htmlspecialchars($factura->cl_sobrenome) . '</b></a>&nbsp;</div><p class="currenttittle"><i class="fa fa-calendar-check-o text-success"></i>&nbsp;' . date(LogActivity::commonDateFromatType(), strtotime($factura->inv_date)) . '</b></p>';
+                else:
+                    $nestedData['name'] = '<div  style="font-size:15px;"  class="clinthead text-primary"><a  class="title text-primary" href="">' . htmlspecialchars($factura->cl_instituicao) . '</b></a>&nbsp;</div><p class="currenttittle"><i class="fa fa-calendar-check-o text-success"></i>&nbsp;' . date(LogActivity::commonDateFromatType(), strtotime($factura->inv_date)) . '</b></p>';
+                endif;
+
+                $nestedData['total_amount'] = $term->total_amount;
+                $nestedData['paid_amount'] = ($term->paidAmount != '') ? $term->paidAmount : '0';
+
+                $nestedData['due_amount'] = '<p class="currenttittle text-danger"><i class="fa fa-calendar-times-o"></i> ' . date(LogActivity::commonDateFromatType(), strtotime($factura->due_date)) . ' </p></b>';
+
+                $nestedData['invoice_no'] = '<a href="' . $view . '" class="text-primary">' . $term->factura_no . '</a>';
+                $nestedData['status'] = $factura->status;
+
+
+                if ($isEdit == "1" || $isDelete == "1") {
+
+                    $nestedData['options'] = $this->action([
+                        'view' => url('admin/create-Invoice-view-detail/' . encrypt($factura->id) . '/view'),
+                        'edit' => route('factura.edit', encrypt($factura->id)),
+                        'delete' => collect([
+                            'id' => $factura->id,
+                            'action' => route('factura.destroy', $factura->id),
+                        ]),
+                        'print' => url('admin/create-Invoice-view-detail/' . encrypt($factura->id) . '/print'),
+                        'payment_recevie_modal' => collect([
+                            'id' => $factura->id,
+                            'action' => route('factura.show', $factura->id),
+                            'target' => '#clientPaymentreceivemodal'
+                        ]),
+                        'payment_histroy_modal' => collect([
+                            'id' => $factura->id,
+                            'action' => url('admin/show_payment_history/' . encrypt($factura->id)),
+                            'target' => '#clientPaymenthistroymodal'
+                        ]),
+                        'delete_permission' => $isDelete,
+                        'edit_permission' => $isEdit,
+                    ]);
+                } else {
+                    $nestedData['options'] = $this->action([
+                        'view' => url('admin/create-Invoice-view-detail/' . $factura->id . '/view'),
+                        'print' => url('admin/create-Invoice-view-detail/' . $factura->id . '/print'),
+                        'payment_histroy_modal' => collect([
+                            'id' => $factura->id,
+                            'action' => url('admin/show_payment_history/' . $factura->id),
+                            'target' => '#clientPaymenthistroymodal'
+                        ]),
+                    ]);
+                }
+
+                $data[] = $nestedData;
+            }
+        }
+
+        $json_data = array(
+            "draw" => intval($request->input('draw')),
+            "recordsTotal" => intval($totalData),
+            "recordsFiltered" => intval($totalFiltered),
+            "data" => $data
+        );
+
+        echo json_encode($json_data);
+    }
+
+    public function agendaFacturas($agenda_id)
+    {
+        $data['agenda_id'] = decrypt($agenda_id);
+        $agenda = DB::table('factura')->join('agenda', 'agenda.id', '=', 'factura.agenda_id')
+            ->where('agenda.id', decrypt($agenda_id))->first();
+        $data['agenda_info'] = $agenda;
+
+        if ($data['agenda_info']) {
+            return view('admin.factura.agenda_invoices', $data);
+        } else {
+            return redirect()->back()->with('error', 'Agenda sem factura.');
+        }
+    }
+
+    public function InvoiceClientList(Request $request)
+    {
+
+        $user = auth()->user();
+        $isEdit = $user->can('invoice_edit');
+        $isDelete = $user->can('invoice_delete');
+        $id_cliente = $user->cliente->id;
+
+        /*
+          |----------------
+          | Listing colomns
+          |----------------
+         */
+        $columns = array(
+            0 => 'id',
+            1 => 'invoice_no',
+            2 => 'client_id',
+            3 => 'total_amount',
+            4 => 'dueAmount',
+            5 => 'inv_status',
+        );
+
+        $totalData = DB::table('factura AS f')
+            ->count();
+
+        $totalFiltered = $totalData;
+        $totalRec = $totalData;
+        $limit = $request->input('length');
+        $start = $request->input('start');
+        $order = $columns[$request->input('order.0.column')];
+        $dir = $request->input('order.0.dir');
+
+        if (empty($request->input('search.value'))) {
+            $terms = DB::table('factura AS f')
+                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                ->select('f.factura_no', 'f.total_amount')
+                ->selectRaw('sum(p.amount) as paidAmount')
+                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                ->where('f.cliente_id', $id_cliente)
+                ->groupBy('f.factura_no')
+                ->groupBy('f.total_amount')
+                ->offset($start)
+                ->limit($limit)
+                ->get();
+        } else {
+            /*
+              |--------------------------------------------
+              | For table search filter from frontend site inside two table namely courses and courseterms.
+              |--------------------------------------------
+             */
+            $search = $request->input('search.value');
+
+            $terms = DB::table('factura AS f')
+                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                ->select('f.factura_no', 'f.total_amount')
+                ->selectRaw('sum(p.amount) as paidAmount')
+                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
+                ->where('f.activo', 'S')
+                ->where('f.cliente_id', $id_cliente)
+                ->where(function ($quary) use ($search) {
+                    $quary->where('f.factura_no', 'LIKE', "%{$search}%")
+                        ->orWhere('f.total_amount', 'LIKE', "%{$search}%");
+                })
+                ->groupBy('f.factura_no')
+                ->groupBy('f.total_amount')
+                ->offset($start)
+                ->limit($limit)
+                ->get();
+
+            $totalFiltered = collect($terms)->count();
+        }
+
+        $data = array();
+        if (!empty($terms)) {
+            foreach ($terms as $Key => $term) {
+
+                $factura = DB::table('factura AS f')
+                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
+                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
+                    ->select('f.id AS id', 'p.amount', 'f.total_amount As total_amount', 'f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome', 'c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.status', 'c.id as client_id')
+                    ->where('f.activo', 'S')
+                    ->where('f.cliente_id', $id_cliente)
                     ->where('f.factura_no', $term->factura_no)
                     ->first();
 
@@ -541,7 +672,7 @@ class FacturaController extends Controller
                 $nestedData['due_amount'] = '<p class="currenttittle">' . $term->dueAmount . '</p></b><p class="currenttittle text-danger"><i class="fa fa-calendar-times-o"></i> ' . date(LogActivity::commonDateFromatType(), strtotime($factura->due_date)) . ' </p></b>';
 
                 $nestedData['invoice_no'] = '<a href="' . $view . '" class="text-primary">' . $term->factura_no . '</a>';
-                $nestedData['status'] = $factura->inv_status;
+                $nestedData['status'] = $factura->status;
 
 
                 if ($isEdit == "1" || $isDelete == "1") {
@@ -569,197 +700,8 @@ class FacturaController extends Controller
                     ]);
                 } else {
                     $nestedData['options'] = $this->action([
-                        'view' => url('admin/create-Invoice-view-detail/' . $factura->id . '/view'),
+                        'view' => url('admin/create-Invoice-view-detail/' . encrypt($factura->id) . '/view'),
                         'print' => url('admin/create-Invoice-view-detail/' . $factura->id . '/print'),
-                        'payment_histroy_modal' => collect([
-                            'id' => $factura->id,
-                            'action' => url('admin/show_payment_history/' . $factura->id),
-                            'target' => '#clientPaymenthistroymodal'
-                        ]),
-                    ]);
-                }
-
-                $data[] = $nestedData;
-            }
-        }
-
-        $json_data = array(
-            "draw" => intval($request->input('draw')),
-            "recordsTotal" => intval($totalData),
-            "recordsFiltered" => intval($totalFiltered),
-            "data" => $data
-        );
-
-        echo json_encode($json_data);
-    }
-
-    public function InvoiceClientList(Request $request)
-    {
-
-        $user = auth()->user();
-        $isEdit = $user->can('invoice_edit');
-        $isDelete = $user->can('invoice_delete');
-
-        $client_id = $request->advocate_client_id;
-        /*
-          |----------------
-          | Listing colomns
-          |----------------
-         */
-        $columns = array(
-            0 => 'id',
-            1 => 'client_id',
-            2 => 'total_amount',
-            3 => 'due_amount',
-            4 => 'inv_status',
-        );
-
-        //$advocate_id = $this->getLoginUserId();
-
-        $totalData = DB::table('factura AS f')
-            // ->where('i.advocate_id', $advocate_id)
-            ->where('f.cliente_id', $client_id)
-            ->where('f.activo', 'S')
-            ->count();
-
-        $totalFiltered = $totalData;
-        $totalRec = $totalData;
-        $limit = $request->input('length');
-        $start = $request->input('start');
-        $order = $columns[$request->input('order.0.column')];
-        $dir = $request->input('order.0.dir');
-
-        if (empty($request->input('search.value'))) {
-            $terms = DB::table('factura AS f')
-                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                ->select('f.factura_no', 'f.total_amount As total_amount')
-                ->selectRaw('sum(p.amount) as paidAmount')
-                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                //->where('i.advocate_id', $advocate_id)
-                ->where('f.cliente_id', $client_id)
-                ->where('f.activo', 'S')
-                ->groupBy('f.factura_no')
-                ->groupBy('f.total_amount')
-                ->offset($start)
-                ->limit($limit)
-                ->orderBy($order, $dir)
-                ->get();
-        } else {
-
-            /*
-              |--------------------------------------------
-              | For table search filter from frontend site inside two table namely courses and courseterms.
-              |--------------------------------------------
-             */
-            $search = $request->input('search.value');
-
-            $terms = DB::table('factura AS f')
-                ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                ->select('f.factura_no', 'f.total_amount As total_amount')
-                ->selectRaw('sum(p.amount) as paidAmount')
-                ->selectRaw('f.total_amount-SUM(ifnull(p.amount, 0)) AS dueAmount')
-                // ->where('i.advocate_id', $advocate_id)
-                ->where('f.cliente_id', $client_id)
-                ->where('f.activo', 'S')
-                ->where(function ($quary) use ($search) {
-                    $quary->where('f.factura_no', 'LIKE', "%{$search}%")
-                        ->orWhere('c.nome', 'LIKE', "%{$search}%")
-                        ->orWhere('c.sobrenome', 'LIKE', "%{$search}%")
-                        ->orWhere('c.instituicao', 'LIKE', "%{$search}%")
-                        ->orWhere('f.total_amount', 'LIKE', "%{$search}%")
-                        ->orWhere('f.inv_status', 'LIKE', "%{$search}%");
-                })
-                ->groupBy('f.factura_no')
-                ->groupBy('f.total_amount')
-                ->offset($start)
-                ->limit($limit)
-                ->orderBy($order, $dir)
-                ->get();
-
-
-            $totalFiltered = collect($terms)->count();
-        }
-
-        $data = array();
-        if (!empty($terms)) {
-            foreach ($terms as $Key => $term) {
-
-                $factura = DB::table('factura AS f')
-                    ->leftJoin('payment_receiveds As p', 'p.factura_id', '=', 'f.id')
-                    ->leftJoin('cliente As c', 'c.id', '=', 'f.cliente_id')
-                    ->select('f.id AS id', 'p.amount', 'f.total_amount As total_amount', 'f.inv_date', 'f.due_date', 'c.nome AS cl_nome', 'c.sobrenome AS cl_sobrenome', 'c.tipo AS cl_tipo', 'c.instituicao AS cl_instituicao', 'f.inv_status', 'c.id AS client_id')
-                    ->where('f.activo', 'S')
-                    ->where('f.factura_no', $term->factura_no)
-                    ->first();
-                /**
-                 * For HTMl action option like edit and delete
-                 */
-                $token = csrf_field();
-
-                $action_delete = route('factura.destroy', $factura->id);
-                $delete = "<form action='{$action_delete}' method='post' onsubmit ='return  confirmDelete()'>
-                {$token}
-                            <input name='_method' type='hidden' value='DELETE'>
-                            <button class='dropdown-item text-center' type='submit'  style='background: transparent;
-    border: none;'><i class='fa fa-trash fa-1x'></i> Delete</button>
-                          </form>";
-
-                $showReceipt = '"' . route('factura.show', $factura->id) . '"';
-                $showPaymentHistory = '"' . url('admin/show_payment_history/' . $factura->id) . '"';
-                $msgPayment = '"Payment History"';
-                $msg = '"Add Payment"';
-
-                $edit = route('factura.edit', $factura->id);
-                $editMsg = '"Editar factura"';
-
-                $view = url('admin/create-Invoice-view-detail/' . $factura->id . '/view');
-                $print = url('admin/create-Invoice-view-detail/' . $factura->id . '/print');
-                $email = url('admin/create-Invoice-view-detail/' . $factura->id . '/email');
-
-                $chk = $this->checkClientEmailExits($factura->client_id);
-
-                /**
-                 * -/End
-                 */
-                if ($chk) {
-                    $email = "<li style='text-align:left'><a class='dropdown-item' href='{$email}' title='Send invoice in email to client'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
-                                                        Email</a></li>";
-                } else {
-                    $email = "<li style='text-align:left'><a class='dropdown-item' href='javascript:void(0);' style='cursor: no-drop;' title='Client don`t have email'>&nbsp;&nbsp;<i class='fa fa-envelope'></i>
-                                                        Email</a></li>";
-                }
-
-                if (empty($request->input('search.value'))) {
-                    $final = $totalRec - $start;
-                    $nestedData['id'] = $final;
-                    $totalRec--;
-                } else {
-                    $start++;
-                    $nestedData['id'] = $start;
-                }
-                $nestedData['name'] = '<div  class="clinthead text-primary"><a  class="title text-primary"  style="font-size:15px;"  href="">' . $term->first_name . " " . $term->middle_name . " " . $term->last_name . '</b></a>&nbsp;</div><p class="currenttittle"><i class="fa fa-calendar-check-o text-success"></i>&nbsp;' . date(LogActivity::commonDateFromatType(), strtotime($term->inv_date)) . '</b></p>';
-
-                $nestedData['total_amount'] = $term->total_amount;
-                $nestedData['paid_amount'] = ($term->paidAmount != '') ? $term->paidAmount : '0';
-
-                $nestedData['due_amount'] = '<p class="currenttittle"> ' . $term->dueAmount . '</p></b><p class="currenttittle text-danger"><i class="fa fa-calendar-times-o"></i> ' . date(LogActivity::commonDateFromatType(), strtotime($term->due_date)) . ' </p></b>';
-
-
-                $nestedData['invoice_no'] = '<a href="' . $view . '" class="text-primary">' . $term->factura_no . '</a>';
-                $nestedData['status'] = $factura->inv_status;
-
-                if ($isEdit == "1" || $isDelete == "1") {
-                    $nestedData['options'] = $this->action([
-                        'view' => url('admin/create-Invoice-view-detail/' . $factura->id . '/view'),
-                        'edit' => route('factura.edit', $factura->id),
-                        'delete' => collect([
-                            'id' => $factura->id,
-                            'action' => route('factura.destroy', $factura->id),
-                        ]),
-                        'print' => url('admin/create-Invoice-view-detail/' . $factura->id . '/print'),
-                        // 'email' =>url('admin/create-Invoice-view-detail/'.$term->id.'/email'),
                         'payment_recevie_modal' => collect([
                             'id' => $factura->id,
                             'action' => route('factura.show', $factura->id),
@@ -767,23 +709,9 @@ class FacturaController extends Controller
                         ]),
                         'payment_histroy_modal' => collect([
                             'id' => $factura->id,
-                            'action' => url('admin/show_payment_history/' . $factura->id),
+                            'action' => url('admin/show_payment_history/' . encrypt($factura->id)),
                             'target' => '#clientPaymenthistroymodal'
-                        ]),
-                        'delete_permission' => $isDelete,
-                        'edit_permission' => $isEdit,
-                    ]);
-                } else {
-
-                    $nestedData['options'] = $this->action([
-                        'view' => url('admin/create-Invoice-view-detail/' . $factura->id . '/view'),
-                        'payment_histroy_modal' => collect([
-                            'id' => $factura->id,
-                            'action' => url('admin/show_payment_history/' . $factura->id),
-                            'target' => '#clientPaymenthistroymodal'
-                        ]),
-                        'delete_permission' => $isDelete,
-                        'edit_permission' => $isEdit,
+                        ])
                     ]);
                 }
 
@@ -856,7 +784,6 @@ class FacturaController extends Controller
         if (!empty($records)) {
 
             $detail = '<label  class="discount_text">Billed To:- </label><br>';
-
             $detail .= '<p style="color:#333;">' . htmlspecialchars($records->full_name) . '</p>';
             if ($records->endereco != '')
                 $detail .= '<p style="color:black;">' . htmlspecialchars($records->endereco) . '</p>';
@@ -904,8 +831,6 @@ class FacturaController extends Controller
 
         ]);
 
-        // $advocate_id = $this->getLoginUserId();
-
         $check = $this->check_invoice_exits("", $request->invoice_id);
         if ($check == "false") {
             Session::flash('error', "Faild to data");
@@ -941,7 +866,6 @@ class FacturaController extends Controller
                 $itemFactura = new ItemFactura();
                 $itemFactura->factura_id = $factura->id;
                 $itemFactura->item_descricao = $value['description'];
-                // $iteams->hsn = $value['hsn'];
                 $itemFactura->servico_id = $value['services'];
                 $itemFactura->item_rate = $value['rate'];
                 $itemFactura->iteam_qty = $value['qty'];
@@ -954,12 +878,66 @@ class FacturaController extends Controller
 
         return redirect()->route('factura.index');
     }
+    public function storeFactura(Request $request)
+    {
+
+        if (empty($request->invoice_items)) {
+            return back();
+        }
+
+        $this->validate($request, [
+            'client_id' => 'required',
+            'inc_Date' => 'required',
+            'due_Date' => 'required',
+
+        ]);
+
+        $check = $this->check_invoice_exits("", $request->invoice_id);
+        if ($check == "false") {
+            return back();
+        }
+
+        $factura = new Factura();
+
+        $factura->cliente_id = $request->client_id;
+        $factura->sub_total_amount = $request->subTotal;
+        $factura->tax_amount = $request->taxVal;
+        $factura->total_amount = $request->total;
+        $factura->due_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->due_Date)));
+        $factura->inv_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->inc_Date)));
+        $factura->agenda_id = $request->agenda_id;
+        $factura->status = 'pendente';
+        $factura->remarks = $request->note;
+        $factura->factura_no = $request->invoice_id;
+        $factura->invoice_created_by = auth()->user()->id;
+        $factura->tax_type = $request->tex_type;
+        $factura->tax_id = $request->tax;
+        $factura->save();
+
+        //increment count of invoice setting
+        $setting = ConfiguracaoFactura::where('id', "1")->first();
+        $setting->factura_no = $setting->factura_no + 1;
+        $setting->save();
+
+        $resp = array();
+
+        if (!empty($request->invoice_items) && count($request->invoice_items) > 0) {
+            foreach ($request->invoice_items as $key => $value) {
+                $itemFactura = new ItemFactura();
+                $itemFactura->factura_id = $factura->id;
+                $itemFactura->item_descricao = $value['description'];
+                $itemFactura->servico_id = $value['services'];
+                $itemFactura->item_rate = $value['rate'];
+                $itemFactura->iteam_qty = $value['qty'];
+                $itemFactura->item_amount = $value['amount'];
+                $itemFactura->save();
+            }
+        }
+    }
 
     public function sendMail($id)
     {
-
         $data['invoice'] = Factura::with('itensFactura', 'cliente')->findOrFail($id);
-
         if (isset($data['invoice']->itensFactura) && count($data['invoice']->itensFactura) > 0) {
 
             foreach ($data['invoice']->itensFactura as $key => $value) {
@@ -999,9 +977,7 @@ class FacturaController extends Controller
             $data['json_to_array'] = json_decode($data['invoice']->json_content, true);
         }
         $data['tax_type'] = $data['invoice']->tax_type;
-
         $data['total_amount_world'] = $this->getIndianCurrency($data['invoice']->total_amount) . " Only.";
-
         $pdf = PDF::loadView('pdf.invoice', $data);
 
         $input['from'] = "care@advocatesdiary.in";
@@ -1043,8 +1019,6 @@ class FacturaController extends Controller
 
     public function generateInvoice()
     {
-
-        // $advocate_id = $this->getLoginUserId();
         $data['setting'] = ConfiguracaoFactura::where('id', 1)->first();
 
         if (empty($data['setting'])) {
@@ -1059,24 +1033,16 @@ class FacturaController extends Controller
 
     public function generateReceiptNo()
     {
-
-        // $advocate_id = $this->getLoginUserId();
-        // $setting=InvoiceSetting::where('advocate_id',$advocate_id)->first();
         $setting = ConfiguracaoFactura::find(1);
-
         $receipt = $setting->receipt_no + 1;
         return $receipt;
     }
 
     public function addPrefix()
     {
-        // $advocate_id = $this->getLoginUserId();
         $setting = ConfiguracaoFactura::where('id', "1")->first();
-
         $inv = $setting->factura_no + 1;
-
         $inv = $my_val = str_pad($inv, 6, '0', STR_PAD_LEFT);
-
         $prefix = "";
         $prefix = $setting->prefixo;
 
@@ -1093,42 +1059,27 @@ class FacturaController extends Controller
         return $for;
     }
 
-    public function paymentHistory($inv_id = null)
-    {
-        $data['getPaymentHistory'] = DB::table('payment_receiveds AS pr')
-            ->leftJoin('factura AS inv', 'pr.factura_id', '=', 'inv.id')
-            ->where('pr.factura_id', decrypt($inv_id))
-            ->orderby('pr.id', 'DESC')
-            ->get();
-        // return view('admin.invoice.payment-history',$data);
 
-        $html = view('admin.factura.payment-history', $data)->render();
-        return response()->json(['html' => $html], 200);
+    public function updateStatus(Request $request)
+    {
+        try {
+            $paymentId = $request->payment_id;
+            $status = $request->status;
+
+            DB::table('payment_receiveds')
+                ->where('id', $paymentId)
+                ->update(['status' => $status]);
+
+            $this->updateStatusFatura($request->factura_id, $status);
+
+            return response()->json(['success' => true, 'message' => 'Status atualizado com sucesso']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erro ao atualizar status']);
+        }
     }
 
-    public function billHistory($pr_id = null)
-    {
-
-        $advocate_id = $this->getLoginUserId();
-
-        $data['getPaymentHistory'] = DB::table('payment_receiveds AS pr')
-            ->leftJoin('factura AS inv', 'pr.invoice_id', '=', 'inv.id')
-            ->where('pr.advocate_id', $advocate_id)
-            ->where('pr.id', $pr_id)
-            ->orderby('pr.id', 'DESC')
-            ->get();
-        return view('admin.factura.payment-history', $data);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
-
         $factura = Factura::findOrFail($id);
         $factura->activo = 'N';
 
@@ -1138,13 +1089,10 @@ class FacturaController extends Controller
             'success' => true,
             'message' => 'Factura eliminada.'
         ], 200);
-        // Session::flash('success',"Invoice deleted successfully.");
-        // return redirect()->route('invoice.index');
     }
 
     public function check_invoice_exits($id, $data)
     {
-        // $advocate_id   = $this->getLoginUserId();
         if ($id == "") {
             $count = Factura::where('factura_no', $data)->count();
             if ($count == 0) {
@@ -1155,7 +1103,6 @@ class FacturaController extends Controller
         } else {
             $count = Factura::where('factura_no', '=', $data)
                 ->where('id', '<>', $id)
-                // ->where('advocate_id',$advocate_id)
                 ->count();
             if ($count == 0) {
                 return 'true';
@@ -1164,6 +1111,7 @@ class FacturaController extends Controller
             }
         }
     }
+
 
     function getIndianCurrency(float $number)
     {

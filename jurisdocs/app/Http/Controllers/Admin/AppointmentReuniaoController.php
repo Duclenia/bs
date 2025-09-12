@@ -2,22 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\AgendamentoConsulta;
 use App\AgendamentoReuniao;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreAppointment;
 use App\Http\Controllers\Controller;
 use App\Models\{Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
 use App\Helpers\LogActivity;
-use App\Http\Requests\StoreClient;
-use App\Notifications\ActivityNotification;
 use App\Services\ZoomService;
-use Illuminate\Support\Facades\Notification;
 use App\Traits\DatatablTrait;
 use Gate;
 use DB;
 
-use function PHPSTORM_META\type;
 
 class AppointmentReuniaoController extends Controller
 {
@@ -25,11 +20,13 @@ class AppointmentReuniaoController extends Controller
     use DatatablTrait;
     private $cliente;
     private $clienteAgenda;
+    private $factura;
 
-    public function __construct(Cliente $cliente, ClienteController $client)
+    public function __construct(Cliente $cliente, ClienteController $client,  FacturaController $factura)
     {
         $this->cliente = $cliente;
         $this->clienteAgenda = $client;
+        $this->factura = $factura;
     }
 
 
@@ -71,7 +68,7 @@ class AppointmentReuniaoController extends Controller
     }
 
 
-    public function store(Agenda $a, StoreAppointment $request)
+    public function store(Agenda $a, Request $request)
     {
 
         $agendaReuniao = new AgendamentoReuniao();
@@ -82,15 +79,48 @@ class AppointmentReuniaoController extends Controller
             $cliente = $this->cliente->where('id', $request->exists_client)->first();
             $agendaReuniao->vc_entidade = ($request->vc_entidade) ? $request->vc_entidade : $cliente->full_name;
         }
+
         $agendaReuniao->vc_motivo = addslashes($request->vc_motivo);
         $agendaReuniao->vc_nota = addslashes($request->vc_nota);
         $agendaReuniao->agenda_id = $a->id;
         $agendaReuniao->it_termo = $request->it_termo;
         $agendaReuniao->save();
+
+        // Criar factura se houver custo
+        if ($agendaReuniao && $request->custo > 0) {
+            $this->gerarFactura($request, $agendaReuniao);
+        }
+
         return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião criado.");
     }
 
+    public function gerarFactura(Request $request, AgendamentoReuniao $a_reuniao)
+    {
 
+        $facturaData = [
+            'client_id' => $a_reuniao->agenda->cliente_id,
+            'agenda_id' => $a_reuniao->agenda_id,
+            'inc_Date' => $request->date,
+            'due_Date' => date('Y-m-d', strtotime('+30 days')),
+            'subTotal' => $request->custo,
+            'total' => $request->custo,
+            'taxVal' => 0,
+            'tex_type' => 'none',
+            'tax' => 0,
+            'note' => 'Factura gerada automaticamente para reunião',
+            'invoice_id' => $this->factura->generateInvoice(),
+            'invoice_items' => [[
+                'description' => 'Reunião - ' . $a_reuniao->vc_motivo,
+                'services' => 1,
+                'rate' => $request->custo,
+                'qty' => 1,
+                'amount' => $request->custo
+            ]]
+        ];
+
+        $facturaRequest = new Request($facturaData);
+        $this->factura->storeFactura($facturaRequest);
+    }
     public function show($id)
     {
         $user = auth()->user();
@@ -249,10 +279,12 @@ class AppointmentReuniaoController extends Controller
                 }
                 $con .= ">Encaminhar para outro advogado</option>";
 
-
+                $con .= "<option value='PENDING'";
+                if ($term->status == 'PENDING') {
+                    $con .= "selected";
+                }
+                $con .= ">Pendente</option>";
                 $con .= "</select>";
-
-
 
                 if ($isEdit == "1") {
                     $nestedData['is_active'] = $con;
@@ -260,16 +292,6 @@ class AppointmentReuniaoController extends Controller
                     $nestedData['is_active'] = "";
                 }
 
-                // if (empty($request->input('search.value'))) {
-                //     $final = $totalRec - $start;
-                //     $nestedData['id'] = $final;
-                //     $totalRec--;
-                //      \Log::debug("message". $nestedData['id'] );
-                // } else {
-                //     $start++;
-                //     $nestedData['id'] = $term->id;
-                //      \Log::debug("message_id2". $nestedData['id'] );
-                // }
                 $nestedData['id'] = $term->id;
                 $nestedData['date'] = date(LogActivity::commonDateFromatType(), strtotime($term->date));
                 $nestedData['time'] = date('g:i a', strtotime($term->time));
@@ -281,13 +303,14 @@ class AppointmentReuniaoController extends Controller
                         'view' => route('reuniao.show', encrypt($term->id)),
                         'edit' => route('reuniao.edit', encrypt($term->id)),
                         'edit_permission' => $isEdit,
-                        'upload_comprovativo' => collect(['id' => $term->id])
+                        'documento' => route('agenda.facturas', encrypt($term->id))
                     ]);
                 } else {
                     $nestedData['action'] = $this->action(
                         [
+                            'documento' => route('agenda.facturas' . $term->id),
                             'view' => route('reuniao.show', encrypt($term->id)),
-                            'upload_comprovativo' => collect(['id' => $term->id])
+
                         ]
                     );
                 }

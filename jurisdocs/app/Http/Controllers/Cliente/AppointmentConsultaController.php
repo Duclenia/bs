@@ -293,13 +293,9 @@ class AppointmentConsultaController extends Controller
                 $nestedData['name'] = htmlspecialchars($term->vc_tipo);
 
                 $actionData = [
-                    'view' => route('cliente.consulta.show', encrypt($term->id))
+                    'view' => route('cliente.consulta.show', encrypt($term->id)),
+                    'documento' => route('agenda.facturas', encrypt($term->id))
                 ];
-
-                // Só mostrar upload se não tiver comprovativo
-                if (empty($term->vc_caminho_pdf)) {
-                    $actionData['upload_comprovativo'] = collect(['id' => $term->id]);
-                }
 
                 $nestedData['action'] = $this->action($actionData);
 
