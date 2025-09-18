@@ -38,7 +38,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
-    
+
     public function funcoes()
     {
         return $this->belongsToMany(Role::class, 'user_roles');
@@ -61,13 +61,13 @@ class User extends Authenticatable
 
         return $this->funcoes->contains('nome', $funcoes);
     }
-    
+
     public function admin()
     {
         return $this->hasOne(Admin::class, 'user_id');
     }
-    
-    
+
+
     public function cliente()
     {
         return $this->hasOne(Cliente::class, 'user_id');

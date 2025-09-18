@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\AgendamentoReuniao;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreAppointment;
 use App\Http\Controllers\Controller;
-use App\Models\{Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
+use App\Models\{Cliente, AgendamentoReuniao, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa, Factura, PaymentReceived};
 use App\Helpers\LogActivity;
 use App\Services\ZoomService;
 use App\Traits\DatatablTrait;
 use Gate;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 
 class AppointmentReuniaoController extends Controller
@@ -21,12 +20,14 @@ class AppointmentReuniaoController extends Controller
     private $cliente;
     private $clienteAgenda;
     private $factura;
+    private $pagamento;
 
-    public function __construct(Cliente $cliente, ClienteController $client,  FacturaController $factura)
+    public function __construct(Cliente $cliente, ClienteController $client, PagamentoController $pagamento,  FacturaController $factura)
     {
         $this->cliente = $cliente;
         $this->clienteAgenda = $client;
         $this->factura = $factura;
+        $this->pagamento = $pagamento;
     }
 
 
@@ -70,37 +71,41 @@ class AppointmentReuniaoController extends Controller
 
     public function store(Agenda $a, Request $request)
     {
+        try {
+            if ($request->type == "new") {
+                $vc_entidade = $request->instituicao
+                    ? $request->instituicao
+                    : $request->f_name . ' ' . $request->l_name;
+            } else {
+                $cliente = $this->cliente->where('id', $request->exists_client)->first();
+                $vc_entidade = $request->vc_entidade
+                    ? $request->vc_entidade
+                    : $cliente->full_name;
+            }
+            $agendaReuniao = AgendamentoReuniao::create([
+                'vc_entidade' => $vc_entidade,
+                'vc_motivo'   => addslashes($request->vc_motivo),
+                'vc_nota'     => addslashes($request->vc_nota),
+                'agenda_id'   => $a->id,
+                'it_termo'    => $request->it_termo,
+            ]);
 
-        $agendaReuniao = new AgendamentoReuniao();
-        if ($request->type == "new") {
-            $agendaReuniao->vc_entidade = ($request->instituicao) ? $request->instituicao : $request->f_name . ' ' . $request->l_name;
-        } else {
-
-            $cliente = $this->cliente->where('id', $request->exists_client)->first();
-            $agendaReuniao->vc_entidade = ($request->vc_entidade) ? $request->vc_entidade : $cliente->full_name;
+            if ($agendaReuniao && $request->custo > 0) {
+                return $this->processarPagamento($request, $agendaReuniao);
+            }
+            // return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião criado com sucesso.");
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->withErrors(['error' => 'Erro ao criar agendamento: ' . $e->getMessage()]);
         }
-
-        $agendaReuniao->vc_motivo = addslashes($request->vc_motivo);
-        $agendaReuniao->vc_nota = addslashes($request->vc_nota);
-        $agendaReuniao->agenda_id = $a->id;
-        $agendaReuniao->it_termo = $request->it_termo;
-        $agendaReuniao->save();
-
-        // Criar factura se houver custo
-        if ($agendaReuniao && $request->custo > 0) {
-            $this->gerarFactura($request, $agendaReuniao);
-        }
-
-        return redirect()->route('reuniao.index')->with('success', "Agendamento de reunião criado.");
     }
 
-    public function gerarFactura(Request $request, AgendamentoReuniao $a_reuniao)
+    public function processarPagamento(Request $request, AgendamentoReuniao $a_reuniao)
     {
-
         $facturaData = [
             'client_id' => $a_reuniao->agenda->cliente_id,
             'agenda_id' => $a_reuniao->agenda_id,
-            'inc_Date' => $request->date,
+            'inc_Date' => date('Y-m-d'),
             'due_Date' => date('Y-m-d', strtotime('+30 days')),
             'subTotal' => $request->custo,
             'total' => $request->custo,
@@ -111,16 +116,20 @@ class AppointmentReuniaoController extends Controller
             'invoice_id' => $this->factura->generateInvoice(),
             'invoice_items' => [[
                 'description' => 'Reunião - ' . $a_reuniao->vc_motivo,
-                'services' => 1,
+                'services' => 2,
                 'rate' => $request->custo,
                 'qty' => 1,
                 'amount' => $request->custo
             ]]
         ];
-
         $facturaRequest = new Request($facturaData);
-        $this->factura->storeFactura($facturaRequest);
+        $factura = $this->factura->storeFactura($facturaRequest);
+ 
+        if ($factura && $request->comprovativo) {
+            return $this->pagamento->registarPagamento($request, $factura->cliente_id, $factura->id);
+        }
     }
+
     public function show($id)
     {
         $user = auth()->user();

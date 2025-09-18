@@ -16,6 +16,7 @@
         @endif
     </div>
 </div>
+
 <div class="row">
     <div class="col-md-6 form-group">
         <label for="mobile">Contacto telefónico (opcional)</label>
@@ -29,8 +30,9 @@
             autocomplete="off">
     </div>
 </div>
+
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-6">
         <div class="form-group">
             @if (!empty($advogado_list) && count($advogado_list) > 0)
                 <label class="discount_text">Seleccionar o Advogado
@@ -47,22 +49,13 @@
             @endif
         </div>
     </div>
-</div>
 
-<div class="row">
     <div class="col-md-6 form-group">
         <label for="vc_entidade">Entidade / Organização (opcional)</label>
         <input type="text" class="form-control" id="vc_entidade" name="vc_entidade" value="{{ old('vc_entidade') }}">
     </div>
-    @if (auth()->user()->user_type === 'SuperAdmin')
-        <div class="col-md-6 form-group">
-            <label for="custo">Custo da Reunião *</label>
-            <input type="number" class="form-control" id="custo" name="custo" step="0.01" min="0"
-                value="{{ old('custo') }}" placeholder="0.00">
-        </div>
-    @endif
-</div>
 
+</div>
 
 <div class="row">
     <div class="col-md-12 form-group">
@@ -98,11 +91,7 @@
                 Presencial</option>
         </select>
     </div>
-
-
 </div>
-
-
 
 <div class="row">
     <div class="col-md-12 form-group">
@@ -110,20 +99,4 @@
         <textarea class="form-control" id="vc_nota" name="vc_nota" rows="3">{{ old('vc_nota') }}</textarea>
     </div>
 </div>
-<br>
-<div class="row">
-    <div class="col-md-12 form-group">
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="it_termo" id="it_termo" value="1"
-                {{ old('it_termo') ? 'checked' : '' }}>
-            <label class="form-check-label" for="it_termo">
-                Autorização para tratamento de dados pessoais. Autorizo o tratamento dos meus dados
-                para fins de
-                agendamento e
-                comunicação.
-                <a href="#" data-toggle="modal" data-target="#termosModal" style="color: #3f6fb3">Ver
-                    termos</a>
-            </label>
-        </div>
-    </div>
-</div>
+

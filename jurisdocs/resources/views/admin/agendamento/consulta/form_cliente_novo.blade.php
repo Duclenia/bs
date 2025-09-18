@@ -14,27 +14,22 @@
     </div>
 
     <div class="col-md-6 form-group">
-        <label for="">Área do Direito <span class="text-danger">*</span></label>
-        <select class="form-control select2" id="areas_direito" name="vc_area" required>
-            <option value="">-- Selecionar --</option>
-            <option value="Família e Sucessões">Família e Sucessões</option>
-            <option value="Direito Penal">Direito Penal</option>
-            <option value="Penal Económico / Tributário">Penal Económico / Tributário</option>
-            <option value="Direito Civil">Direito Civil</option>
-            <option value="Direito do Trabalho e Segurança Social">Direito do Trabalho e Segurança Social</option>
-            <option value="Direito Societário / Comercial">Direito Societário / Comercial</option>
-            <option value="Direito Fiscal / Aduaneiro">Direito Fiscal / Aduaneiro</option>
-            <option value="Propriedade Intelectual">Propriedade Intelectual</option>
-            <option value="Responsabilidade Financeira e Direito Financeiro">Responsabilidade Financeira e Direito
-                Financeiro</option>
-            <option value="Direito do Contencioso Administrativo">Direito do Contencioso Administrativo</option>
-            <option value="Contencioso Fiscal e Aduaneiro">Contencioso Fiscal e Aduaneiro</option>
-            <option value="Direito Financeiro, Mercados Imobiliários e Valores Mobiliários">Direito Financeiro,
-                Mercados Imobiliários e Valores Mobiliários</option>
-            <option value="Mediação e Arbitragem">Mediação e Arbitragem</option>
-            <option value="Assessoria Jurídica Preventiva">Assessoria Jurídica Preventiva</option>
-            <option value="Outro">Outro</option>
-        </select>
+         <div class="col-md-6 form-group">
+         @if (!empty($areasconsultas))
+             <label class="discount_text">Seleccionar a Área do Direito
+                 <er class="rest">*</er>
+             </label>
+             <select class="form-control select2" id="areas_direito" name="vc_area" required>
+                 <option value="">--Seleccionar--</option>
+                 @foreach ($areasconsultas as $list)
+                     <option value="{{ $list->id }}">
+                         {{ $list->area_consulta }}
+                     </option>
+                 @endforeach
+             </select>
+         @endif
+     </div>
+
     </div>
 
     <div class="col-md-6 form-group" id="vc_area_outro" style="display: none;">

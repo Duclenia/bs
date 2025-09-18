@@ -11,7 +11,7 @@ use App\Helpers\LogActivity;
 use App\Services\ZoomService;
 use App\Traits\DatatablTrait;
 use Gate;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends Controller
 {
@@ -79,6 +79,7 @@ class AppointmentController extends Controller
 
     public function store(StoreAppointment $request)
     {
+       
         try {
 
             $agenda = $this->criarAgenda($request);

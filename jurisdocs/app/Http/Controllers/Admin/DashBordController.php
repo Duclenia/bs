@@ -530,6 +530,7 @@ class DashBordController extends Controller
             ->leftjoin('admin AS adm', 'adm.user_id', '=', 'a.advogado_id')
             ->leftjoin('pessoasingular AS ps', 'ps.id', '=', 'adm.pessoasingular_id')
             ->whereDate('data', $date)
+             ->where('a.activo', ['OPEN', 'TO FORWARD'])
             ->count();
         $totalRec = $totalData;
         // $totalData = DB::table('appointments')->count();
@@ -562,6 +563,7 @@ class DashBordController extends Controller
                 'a.type As type'
             )
             ->whereDate('data', $date)
+            ->where('a.activo', ['OPEN', 'TO FORWARD'])
             ->where(function ($query) use ($search) {
                 return $query->where('a.telefone', 'LIKE', "%{$search}%")
                     ->orWhere('a.nome', 'LIKE', "%{$search}%")

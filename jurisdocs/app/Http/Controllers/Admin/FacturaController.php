@@ -230,7 +230,6 @@ class FacturaController extends Controller
                 } else {
                     $itemFactura = new ItemFactura();
                 }
-
                 $itemFactura->factura_id = $factura->id;
                 $itemFactura->item_descricao = $value['description'];
                 $itemFactura->servico_id = $value['services'];
@@ -245,73 +244,6 @@ class FacturaController extends Controller
 
     public function update(Request $request, $id) {}
 
-    public function CreateInvoiceViewDetail($id, $p)
-    {
-
-        $data['setting'] = ConfiguracaoFactura::where('id', "1")->first();
-
-        $data['invoice'] = Factura::with('itensFactura', 'cliente')->find(decrypt($id));
-        $term_condition = ConfiguracaoFactura::where('id', 1)->first();
-        $data['myTerm'] = [];
-        if ($term_condition->termos_condicoes != "") {
-            $data['myTerm'] = explode('##', $term_condition->termos_condicoes);
-        }
-        if (isset($data['invoice']->itensFactura) && count($data['invoice']->itensFactura) > 0) {
-            foreach ($data['invoice']->itensFactura as $key => $value) {
-
-                $data['iteam'][$key]['service_name'] = isset($value->servico->nome) ? $value->servico->nome : '';
-                $data['iteam'][$key]['custom_items_name'] = $value['item_descricao'];
-                $data['iteam'][$key]['hsn'] = $value['hsn'];
-                $data['iteam'][$key]['custom_items_amount'] = $value['item_amount'];
-                $data['iteam'][$key]['item_rate'] = $value['item_rate'];
-                $data['iteam'][$key]['custom_items_qty'] = $value['iteam_qty'];
-            }
-        }
-
-        $data['advocate_client'] = Cliente::find($data['invoice']->cliente_id);
-        $data['invoice_no'] = $data['invoice']->factura_no;
-
-        $data['due_date'] = date('d-m-Y', strtotime(LogActivity::commonDateFromat($data['invoice']->due_date)));
-        $data['inv_date'] = date('d-m-Y', strtotime(LogActivity::commonDateFromat($data['invoice']->inv_date)));
-        $data['city'] = $this->getCityName($data['advocate_client']->municipio_id);
-        $data['subTotal'] = $data['invoice']->sub_total_amount;
-        $data['tax_amount'] = $data['invoice']->tax_amount;
-        $data['total_amount'] = $data['invoice']->total_amount;
-
-        $data['json_to_array'] = array();
-
-        $data['total_amount_world'] = $this->getIndianCurrency(round($data['invoice']->total_amount)) . " Only.";
-
-        if ($p == "view") {
-            return view('admin.factura.invoice_view', $data);
-        } else if ($p == "print") {
-            $pdf = PDF::loadView('pdf.invoice', $data);
-            return $pdf->stream();
-        } else if ($p == "email") {
-            $mailsetup = Mailsetup::findOrfail(1);
-            if ($mailsetup->mail_email != '') {
-                $pdf = PDF::loadView('pdf.invoice', $data);
-                $input['from'] = $mailsetup->mail_email;
-                $input['to'] = $data['advocate_client']->email;
-                $input['subject'] = "FACTURA" . $data['invoice_no'];
-                $input['title'] = "FACTURA" . $data['invoice_no'];
-                $input['pdfName'] = $data['invoice_no'] . ".pdf";
-
-                Mail::send('pdf.invoice', $data, function ($message) use ($pdf, $input) {
-                    $message
-                        ->from($input['from'], $input['title'])
-                        ->subject($input['subject']);
-                    $message->to($input['to']);
-                    $message->attachData($pdf->output(), $input['pdfName']);
-                });
-                Session::flash('success', "A factura foi enviada com sucesso para o e-mail do cliente.");
-                return back();
-            } else {
-                Session::flash('error', "Por favor, define primeiro os detalhes do SMTP nas configurações.");
-                return back();
-            }
-        }
-    }
 
     public function checkClientEmailExits($id)
     {
@@ -528,7 +460,6 @@ class FacturaController extends Controller
         $agenda = DB::table('factura')->join('agenda', 'agenda.id', '=', 'factura.agenda_id')
             ->where('agenda.id', decrypt($agenda_id))->first();
         $data['agenda_info'] = $agenda;
-
         if ($data['agenda_info']) {
             return view('admin.factura.agenda_invoices', $data);
         } else {
@@ -880,61 +811,161 @@ class FacturaController extends Controller
     }
     public function storeFactura(Request $request)
     {
+        try {
 
-        if (empty($request->invoice_items)) {
-            return back();
+            if (empty($request->invoice_items)) {
+                return back();
+            }
+
+            $this->validate($request, [
+                'client_id' => 'required',
+                'inc_Date' => 'required',
+                'due_Date' => 'required',
+
+            ]);
+
+            $check = $this->check_invoice_exits("", $request->invoice_id);
+            if ($check == "false") {
+                return back();
+            }
+
+            $factura = Factura::create([
+                'cliente_id' => $request->client_id,
+                'sub_total_amount' => $request->subTotal,
+                'tax_amount' => $request->taxVal,
+                'total_amount' => $request->total,
+                'due_date' => date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->due_Date))),
+                'inv_date' => date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->inc_Date))),
+                'agenda_id' => $request->agenda_id,
+                'status' => 'pendente',
+                'remarks' => $request->note,
+                'factura_no' => $request->invoice_id,
+                'invoice_created_by' => auth()->user()->id,
+                'tax_type' => $request->tex_type,
+                'tax_id' => $request->tax,
+            ]);
+
+            //increment count of invoice setting
+            $setting = ConfiguracaoFactura::where('id', "1")->first();
+            $setting->factura_no = $setting->factura_no + 1;
+            $setting->update([
+                'factura_no' => $setting->factura_no,
+            ]);
+
+            if (!empty($request->invoice_items) && count($request->invoice_items) > 0) {
+                foreach ($request->invoice_items as $key => $value) {
+                    ItemFactura::create([
+                        'factura_id' => $factura->id,
+                        'item_descricao' => $value['description'],
+                        'servico_id' => $value['services'],
+                        'item_rate' => $value['rate'],
+                        'iteam_qty' => $value['qty'],
+                        'item_amount' => $value['amount'],
+                    ]);
+                }
+            }
+            return $factura;
+        } catch (\Throwable $th) {
+            dd($th->getMessage());
+        }
+    }
+    public function show($id)
+    {
+        $data['invoice_id'] = $id;
+        $html = view('admin.factura.modal_invoice_paid', $data)->render();
+        return response()->json(['html' => $html], 200);
+    }
+
+    public function paymentHistory($inv_id = null)
+    {
+        $data['getPaymentHistory'] = DB::table('payment_receiveds AS pr')
+            ->leftJoin('factura AS inv', 'pr.factura_id', '=', 'inv.id')
+            ->where('pr.factura_id', decrypt($inv_id))
+            ->orderby('pr.id', 'DESC')
+            ->select('pr.*', 'inv.factura_no', 'inv.id as factura_id')
+            ->get();
+        $html = view('admin.factura.payment-history', $data)->render();
+
+        return response()->json(['html' => $html], 200);
+    }
+
+    public function billHistory($pr_id = null)
+    {
+        $advocate_id = $this->getLoginUserId();
+        $data['getPaymentHistory'] = DB::table('payment_receiveds AS pr')
+            ->leftJoin('factura AS inv', 'pr.invoice_id', '=', 'inv.id')
+            ->where('pr.advocate_id', $advocate_id)
+            ->where('pr.id', $pr_id)
+            ->orderby('pr.id', 'DESC')
+            ->get();
+        return view('admin.factura.payment-history', $data);
+    }
+    public function CreateInvoiceViewDetail($id, $p)
+    {
+
+        $data['setting'] = ConfiguracaoFactura::where('id', "1")->first();
+
+        $data['invoice'] = Factura::with('itensFactura', 'cliente')->find(decrypt($id));
+        $term_condition = ConfiguracaoFactura::where('id', 1)->first();
+        $data['myTerm'] = [];
+        if ($term_condition->termos_condicoes != "") {
+            $data['myTerm'] = explode('##', $term_condition->termos_condicoes);
+        }
+        if (isset($data['invoice']->itensFactura) && count($data['invoice']->itensFactura) > 0) {
+            foreach ($data['invoice']->itensFactura as $key => $value) {
+
+                $data['iteam'][$key]['service_name'] = isset($value->servico->nome) ? $value->servico->nome : '';
+                $data['iteam'][$key]['custom_items_name'] = $value['item_descricao'];
+                $data['iteam'][$key]['hsn'] = $value['hsn'];
+                $data['iteam'][$key]['custom_items_amount'] = $value['item_amount'];
+                $data['iteam'][$key]['item_rate'] = $value['item_rate'];
+                $data['iteam'][$key]['custom_items_qty'] = $value['iteam_qty'];
+            }
         }
 
-        $this->validate($request, [
-            'client_id' => 'required',
-            'inc_Date' => 'required',
-            'due_Date' => 'required',
+        $data['advocate_client'] = Cliente::find($data['invoice']->cliente_id);
+        $data['invoice_no'] = $data['invoice']->factura_no;
+        $data['due_date'] = date('d-m-Y', strtotime(LogActivity::commonDateFromat($data['invoice']->due_date)));
+        $data['inv_date'] = date('d-m-Y', strtotime(LogActivity::commonDateFromat($data['invoice']->inv_date)));
+        $data['city'] = $this->getCityName($data['advocate_client']->municipio_id);
+        $data['subTotal'] = $data['invoice']->sub_total_amount;
+        $data['tax_amount'] = $data['invoice']->tax_amount;
+        $data['total_amount'] = $data['invoice']->total_amount;
 
-        ]);
+        $data['json_to_array'] = array();
 
-        $check = $this->check_invoice_exits("", $request->invoice_id);
-        if ($check == "false") {
-            return back();
-        }
+        $data['total_amount_world'] = $this->getIndianCurrency(round($data['invoice']->total_amount)) . " Only.";
 
-        $factura = new Factura();
+        if ($p == "view") {
+            return view('admin.factura.invoice_view', $data);
+        } else if ($p == "print") {
+            $pdf = PDF::loadView('pdf.invoice', $data);
+            return $pdf->stream();
+        } else if ($p == "email") {
+            $mailsetup = Mailsetup::findOrfail(1);
+            if ($mailsetup->mail_email != '') {
+                $pdf = PDF::loadView('pdf.invoice', $data);
+                $input['from'] = $mailsetup->mail_email;
+                $input['to'] = $data['advocate_client']->email;
+                $input['subject'] = "FACTURA" . $data['invoice_no'];
+                $input['title'] = "FACTURA" . $data['invoice_no'];
+                $input['pdfName'] = $data['invoice_no'] . ".pdf";
 
-        $factura->cliente_id = $request->client_id;
-        $factura->sub_total_amount = $request->subTotal;
-        $factura->tax_amount = $request->taxVal;
-        $factura->total_amount = $request->total;
-        $factura->due_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->due_Date)));
-        $factura->inv_date = date('Y-m-d', strtotime(LogActivity::commonDateFromat($request->inc_Date)));
-        $factura->agenda_id = $request->agenda_id;
-        $factura->status = 'pendente';
-        $factura->remarks = $request->note;
-        $factura->factura_no = $request->invoice_id;
-        $factura->invoice_created_by = auth()->user()->id;
-        $factura->tax_type = $request->tex_type;
-        $factura->tax_id = $request->tax;
-        $factura->save();
-
-        //increment count of invoice setting
-        $setting = ConfiguracaoFactura::where('id', "1")->first();
-        $setting->factura_no = $setting->factura_no + 1;
-        $setting->save();
-
-        $resp = array();
-
-        if (!empty($request->invoice_items) && count($request->invoice_items) > 0) {
-            foreach ($request->invoice_items as $key => $value) {
-                $itemFactura = new ItemFactura();
-                $itemFactura->factura_id = $factura->id;
-                $itemFactura->item_descricao = $value['description'];
-                $itemFactura->servico_id = $value['services'];
-                $itemFactura->item_rate = $value['rate'];
-                $itemFactura->iteam_qty = $value['qty'];
-                $itemFactura->item_amount = $value['amount'];
-                $itemFactura->save();
+                Mail::send('pdf.invoice', $data, function ($message) use ($pdf, $input) {
+                    $message
+                        ->from($input['from'], $input['title'])
+                        ->subject($input['subject']);
+                    $message->to($input['to']);
+                    $message->attachData($pdf->output(), $input['pdfName']);
+                });
+                Session::flash('success', "A factura foi enviada com sucesso para o e-mail do cliente.");
+                return back();
+            } else {
+                Session::flash('error', "Por favor, define primeiro os detalhes do SMTP nas configurações.");
+                return back();
             }
         }
     }
-
     public function sendMail($id)
     {
         $data['invoice'] = Factura::with('itensFactura', 'cliente')->findOrFail($id);

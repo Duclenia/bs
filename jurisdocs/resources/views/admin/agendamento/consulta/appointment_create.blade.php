@@ -325,7 +325,7 @@
                     context: context
                 };
             }
-
+            
             // Função para navegar para um passo específico
             function navigateToStep(stepNumber) {
                 if (!newClientRadio.checked) return; // Só funciona para novos clientes
@@ -653,7 +653,7 @@
                                 });
                             } else {
                                 options +=
-                                '<option value="">Nenhum horário disponível</option>';
+                                    '<option value="">Nenhum horário disponível</option>';
                             }
                             $(horaSelect).html(options);
                         },

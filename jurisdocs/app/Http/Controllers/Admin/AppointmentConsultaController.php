@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\AgendamentoConsulta;
+
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreAppointment;
 use App\Http\Controllers\Controller;
-use App\Models\{User, Cliente, Agenda, Pais, Provincia, TipoDocumento, TipoPessoa};
+use App\Models\{User, AgendamentoConsulta,Cliente, Agenda, AreaConsulta, Pais, Provincia, TipoConsulta, TipoDocumento, TipoPessoa};
 use App\Helpers\LogActivity;
 use App\Services\ZoomService;
 use App\Traits\DatatablTrait;
@@ -46,6 +46,8 @@ class AppointmentConsultaController extends Controller
         $data['client_list'] = $this->cliente->where('activo', 'S')->get();
         $data['country'] = Pais::all();
         $data['state'] = Provincia::all();
+        $data['tiposconsultas'] = TipoConsulta::all();
+        $data['areasconsultas'] = AreaConsulta::all();
         $data['tipospessoas'] = TipoPessoa::all();
         $data['tiposdocumentos'] = TipoDocumento::all();
         $data['advogado_list'] = DB::table('admin AS a')

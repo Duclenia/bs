@@ -33,7 +33,10 @@ class Factura extends Model
     {
         return $this->hasMany(ItemFactura::class, 'factura_id', 'id');
     }
-
+    public function agenda()
+    {
+        return $this->hasOne(Agenda::class, 'id', 'agenda_id');
+    }
     public function cliente()
     {
         return $this->hasOne(Cliente::class, 'id', 'cliente_id');

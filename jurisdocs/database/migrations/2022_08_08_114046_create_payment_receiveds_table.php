@@ -24,16 +24,17 @@ class CreatePaymentReceivedsTable extends Migration
             $table->date('cheque_date')->nullable();
             $table->string('reference_number', 40)->nullable();
             $table->text('note');
+            $table->string('status', 20)->default('pendente');
+            $table->string('comprovativo', 100)->nullable();
             $table->integer('payment_received_by')->unsigned();
-            
             $table->foreign('cliente_id')
                     ->references('id')
                     ->on('cliente');
-            
+
             $table->foreign('factura_id')
                     ->references('id')
                     ->on('factura');
-            
+
             $table->timestamps();
         });
     }
